@@ -47,8 +47,11 @@ const Testimonials: React.FC<TestimonialsProps> = ({ testimonials, config }) => 
                 {t.imageUrl ? (
                   <img src={t.imageUrl} alt={t.name} className="w-14 h-14 rounded-2xl object-cover ring-4 ring-green-50 shadow-md" />
                 ) : (
-                  <div className="w-14 h-14 rounded-2xl bg-green-600 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-green-900/20">
-                    {t.name[0]}
+                  <div 
+                    className="w-14 h-14 rounded-2xl text-white flex items-center justify-center font-black text-xl shadow-lg shadow-gray-900/10"
+                    style={{ backgroundColor: t.logoColor || '#16a34a' }}
+                  >
+                    {t.name?.[0] || 'U'}
                   </div>
                 )}
                 <div>

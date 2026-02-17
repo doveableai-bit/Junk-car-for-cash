@@ -23,7 +23,7 @@ const getSizeClass = (size?: TextSize) => {
   }[size] || 'text-base';
 };
 
-// --- Admin Sub-Components ---
+// --- Admin Editor Helper Components ---
 
 const ContactFieldEditor = ({ title, valueField, colorField, sizeField, visibilityField, config, handleFieldChange, toggleVisibility }: {
   title: string; valueField: keyof SiteConfig; colorField: keyof SiteConfig; sizeField: keyof SiteConfig; 
@@ -216,7 +216,7 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
   const [leads, setLeads] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'leads' | 'branding' | 'content' | 'buttons' | 'contacts' | 'keywords' | 'seo' | 'gallery' | 'reviews' | 'faq'>('leads');
   const [isSaving, setIsSaving] = useState(false);
-  const [newReview, setnewReview] = useState({ name: '', text: '' });
+  const [newReview, setnewReview] = useState({ name: '', text: '', imageUrl: '', logoColor: '#16a34a' });
   const [newFAQ, setNewFAQ] = useState({ question: '', answer: '' });
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [newKeyword, setNewKeyword] = useState('');
@@ -363,10 +363,28 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
     await supabase.from('gallery').update({ [dbField]: value }).eq('id', id);
   };
 
+  // --- REVIEWS LOGIC ---
   const addReview = async () => { 
     if (!newReview.name || !newReview.text) return;
-    const { data, error } = await supabase.from('testimonials').insert([{ name: newReview.name, text: newReview.text, date: new Date().toISOString() }]).select(); 
-    if (data) { setTestimonials([data[0], ...testimonials]); setnewReview({ name: '', text: '' }); } 
+    const { data } = await supabase.from('testimonials').insert([{ 
+      name: newReview.name, 
+      text: newReview.text, 
+      image_url: newReview.imageUrl,
+      logo_color: newReview.logoColor,
+      date: new Date().toISOString() 
+    }]).select(); 
+    if (data) { 
+      const mapped = {
+        id: data[0].id,
+        name: data[0].name,
+        text: data[0].text,
+        imageUrl: data[0].image_url,
+        logoColor: data[0].logo_color,
+        date: data[0].date
+      };
+      setTestimonials([mapped, ...testimonials]); 
+      setnewReview({ name: '', text: '', imageUrl: '', logoColor: '#16a34a' }); 
+    } 
   };
 
   const deleteReview = async (id: string) => {
@@ -376,18 +394,27 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
     }
   };
 
-  const updateReview = async (id: string, name: string, text: string) => {
-    const { error } = await supabase.from('testimonials').update({ name, text }).eq('id', id);
+  const updateReview = async (id: string, name: string, text: string, imageUrl: string, logoColor: string) => {
+    const { error } = await supabase.from('testimonials').update({ 
+      name, 
+      text, 
+      image_url: imageUrl, 
+      logo_color: logoColor 
+    }).eq('id', id);
     if (!error) {
-      setTestimonials(testimonials.map(t => t.id === id ? { ...t, name, text } : t));
+      setTestimonials(testimonials.map(t => t.id === id ? { ...t, name, text, imageUrl, logoColor } : t));
       setEditingReviewId(null);
     }
   };
 
+  // --- FAQ LOGIC ---
   const addFAQ = async () => { 
     if (!newFAQ.question || !newFAQ.answer) return;
-    const { data, error } = await supabase.from('faqs').insert([{ question: newFAQ.question, answer: newFAQ.answer }]).select(); 
-    if (data) { setFaqs([...faqs, data[0]]); setNewFAQ({ question: '', answer: '' }); } 
+    const { data } = await supabase.from('faqs').insert([{ question: newFAQ.question, answer: newFAQ.answer }]).select(); 
+    if (data) { 
+      setFaqs([...faqs, data[0]]); 
+      setNewFAQ({ question: '', answer: '' }); 
+    } 
   };
 
   const deleteFAQ = async (id: string | number) => {
@@ -398,29 +425,25 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
   };
 
   const updateFAQ = async (id: string | number, question: string, answer: string) => {
+    setIsSaving(true);
     const { error } = await supabase.from('faqs').update({ question, answer }).eq('id', id);
     if (!error) {
-      setFaqs(faqs.map(f => f.id === id ? { ...f, question, answer } : f));
+      const updatedFaqs = faqs.map(f => f.id === id ? { ...f, question, answer } : f);
+      setFaqs(updatedFaqs);
       setEditingFaqId(null);
     }
+    setIsSaving(false);
   };
 
   const downloadReceipt = async () => {
     if (receiptRef.current && selectedLead) {
       try {
-        const dataUrl = await toPng(receiptRef.current, { 
-          backgroundColor: '#ffffff',
-          cacheBust: true,
-          style: { fontFamily: 'sans-serif' }
-        });
+        const dataUrl = await toPng(receiptRef.current, { backgroundColor: '#ffffff', cacheBust: true, style: { fontFamily: 'sans-serif' } });
         const link = document.createElement('a');
         link.download = `receipt-${selectedLead.form_number}.png`;
         link.href = dataUrl;
         link.click();
-      } catch (err) { 
-        console.error("Receipt error:", err);
-        alert("Could not generate image. Please try printing instead.");
-      }
+      } catch (err) { alert("Receipt generation failed."); }
     }
   };
 
@@ -451,14 +474,10 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
 
   const fullBusinessName = `${config.businessNamePart1 || ''} ${config.businessNamePart2 || ''} ${config.businessNamePart3 || ''} ${config.businessNamePart4 || ''}`.trim().toUpperCase();
 
-  const allKeywords = (config.seoKeywords || '').split(',').map(k => k.trim()).filter(Boolean);
-  const hiddenKeywordsArray = (config.hiddenKeywords || '').split(',').map(k => k.trim()).filter(Boolean);
-  const visibleKeywordsArray = allKeywords.filter(k => !hiddenKeywordsArray.includes(k));
-
   return (
     <div className="min-h-screen pt-32 pb-20 bg-gray-50">
       <div className="container mx-auto px-4 max-w-[1600px]">
-        {/* TAB NAVIGATION */}
+        {/* HEADER NAVIGATION */}
         <div className="flex flex-col lg:flex-row justify-between items-center mb-12 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
           <div className="flex items-center space-x-4">
              <div className={`w-3 h-3 rounded-full ${isSaving ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
@@ -471,424 +490,84 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
           </div>
         </div>
 
-        {/* FORMS / LEADS TAB */}
-        {activeTab === 'leads' && (
-          <div className="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden animate-fade-in border-gray-100">
-             <div className="p-8 border-b bg-gray-50 flex justify-between items-center">
-               <h3 className="text-xl font-black uppercase tracking-tight">Lead Database Master Log</h3>
-               <button onClick={fetchLeads} className="text-xs font-black bg-white px-4 py-2 border rounded-lg hover:bg-gray-100 transition-colors">Refresh Records</button>
-             </div>
-             <div className="overflow-x-auto">
-               <table className="w-full text-left min-w-[2200px]">
-                 <thead className="bg-gray-100 text-[10px] font-black uppercase text-gray-400">
-                   <tr>
-                     <th className="px-6 py-5">Date</th>
-                     <th className="px-6 py-5">Time</th>
-                     <th className="px-6 py-5">Form ID</th>
-                     <th className="px-6 py-5">First Name</th>
-                     <th className="px-6 py-5">Last Name</th>
-                     <th className="px-6 py-5">Phone</th>
-                     <th className="px-6 py-5">Email</th>
-                     <th className="px-6 py-5">Year</th>
-                     <th className="px-6 py-5">Make</th>
-                     <th className="px-6 py-5">Model</th>
-                     <th className="px-6 py-5">Condition</th>
-                     <th className="px-6 py-5">Title</th>
-                     <th className="px-6 py-5">Pickup Loc.</th>
-                     <th className="px-6 py-5 text-center">Action</th>
-                   </tr>
-                 </thead>
-                 <tbody className="divide-y divide-gray-100">
-                   {leads.map((l) => (
-                     <tr key={l.id} className="hover:bg-gray-50 transition-colors">
-                       <td className="px-6 py-5 text-[11px] text-gray-500 font-bold whitespace-nowrap">{new Date(l.created_at).toLocaleDateString()}</td>
-                       <td className="px-6 py-5 text-[11px] text-gray-500 font-bold whitespace-nowrap">{new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</td>
-                       <td className="px-6 py-5 text-[11px] font-black text-green-700">{l.form_number}</td>
-                       <td className="px-6 py-5 font-black uppercase text-[11px]">{l.first_name}</td>
-                       <td className="px-6 py-5 font-black uppercase text-[11px]">{l.last_name}</td>
-                       <td className="px-6 py-5 text-green-600 font-black text-[11px]">{l.phone}</td>
-                       <td className="px-6 py-5 text-gray-400 font-bold text-[11px] lowercase">{l.email || '—'}</td>
-                       <td className="px-6 py-5 font-black text-[11px] text-gray-900">{l.year}</td>
-                       <td className="px-6 py-5 font-black uppercase text-[11px] text-gray-900">{l.make}</td>
-                       <td className="px-6 py-5 font-black uppercase text-[11px] text-gray-900">{l.model}</td>
-                       <td className="px-6 py-5 font-bold text-[10px] uppercase">
-                          <span className={`px-2 py-1 rounded-md ${l.condition === 'Running' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {l.condition}
-                          </span>
-                       </td>
-                       <td className="px-6 py-5 font-bold text-[10px] uppercase text-blue-600">{l.title_status}</td>
-                       <td className="px-6 py-5 text-[11px] text-gray-500 uppercase font-bold truncate max-w-[250px]">{l.address}</td>
-                       <td className="px-6 py-5 text-center">
-                         <button onClick={() => setSelectedLead(l)} className="bg-green-600 text-white px-6 py-2 rounded-xl text-[10px] font-black shadow-md hover:bg-green-700 transition-all">GENERATE RECEIPT</button>
-                       </td>
-                     </tr>
-                   ))}
-                 </tbody>
-               </table>
-             </div>
-          </div>
-        )}
-
-        {/* IDENTITY TAB */}
-        {activeTab === 'branding' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-green-600 pl-4">Business Identity</h3>
-                {[1, 2, 3, 4].map(n => (
-                  <div key={n} className="bg-gray-50 p-6 rounded-2xl space-y-4">
-                    <label className="text-[10px] font-black text-gray-400 uppercase">Name Part {n}</label>
-                    <div className="flex gap-4">
-                      <input name={`businessNamePart${n}`} value={(config as any)[`businessNamePart${n}`] || ''} onChange={handleFieldChange} className="flex-1 p-4 bg-white border rounded-xl font-black uppercase text-sm" />
-                      <input type="color" name={`businessNameColor${n}`} value={(config as any)[`businessNameColor${n}`] || '#000000'} onChange={handleFieldChange} className="w-12 h-12 rounded-lg border-none p-0 cursor-pointer" />
-                    </div>
-                  </div>
-                ))}
-             </div>
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-green-600 pl-4">Media Assets</h3>
-                <div className="grid grid-cols-1 gap-6">
-                   <div className="p-8 bg-gray-50 rounded-2xl border-dashed border-2 text-center">
-                      <p className="text-xs font-black uppercase mb-4 text-gray-400">Site Logo</p>
-                      <button onClick={() => logoInput.current?.click()} className="bg-green-600 text-white px-8 py-3 rounded-xl text-xs font-black shadow-lg">Upload Logo</button>
-                      <input type="file" ref={logoInput} className="hidden" onChange={e => handleUpload(e, 'logo')} />
-                      {config.logo && <img src={config.logo} className="h-16 mx-auto mt-6 object-contain" alt="Logo preview" />}
-                   </div>
-                   <div className="p-8 bg-gray-50 rounded-2xl border-dashed border-2 text-center">
-                      <p className="text-xs font-black uppercase mb-4 text-gray-400">Hero Banner Background</p>
-                      <button onClick={() => heroInput.current?.click()} className="bg-gray-900 text-white px-8 py-3 rounded-xl text-xs font-black shadow-lg">Change Banner</button>
-                      <input type="file" ref={heroInput} className="hidden" onChange={e => handleUpload(e, 'hero')} />
-                      <div className="mt-4 h-24 rounded-xl overflow-hidden"><img src={config.heroImage} className="w-full h-full object-cover" alt="Hero preview" /></div>
-                   </div>
-                </div>
-             </div>
-          </div>
-        )}
-
-        {/* CONTEXT TAB */}
-        {activeTab === 'content' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 animate-fade-in">
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-blue-600 pl-4">Hero Section</h3>
-                <ContextEditorCard title="Main Headline" textField="headline" sizeField="headlineSize" colorField="headlineColor" config={config} handleFieldChange={handleFieldChange} />
-                <ContextEditorCard title="Sub-Headline Description" textField="heroSubHeadline" sizeField="heroSubHeadlineSize" colorField="heroSubHeadlineColor" config={config} handleFieldChange={handleFieldChange} isTextArea />
-             </div>
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-green-600 pl-4">Gallery Section</h3>
-                <ContextEditorCard title="Main Section Title" textField="homeSection1Title" sizeField="homeSection1TitleSize" colorField="homeSection1TitleColor" config={config} handleFieldChange={handleFieldChange} />
-                <ContextEditorCard title="Section Sub-Heading" textField="homeSection1Sub" sizeField="homeSection1SubSize" colorField="homeSection1SubColor" config={config} handleFieldChange={handleFieldChange} isTextArea />
-             </div>
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-yellow-600 pl-4">Quote Section</h3>
-                <ContextEditorCard title="Form Section Title" textField="quoteSectionTitle" sizeField="quoteSectionTitleSize" colorField="quoteSectionTitleColor" config={config} handleFieldChange={handleFieldChange} />
-                <ContextEditorCard title="Form Instructions Text" textField="quoteSectionSub" sizeField="quoteSectionSubSize" colorField="quoteSectionSubColor" config={config} handleFieldChange={handleFieldChange} isTextArea />
-             </div>
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-purple-600 pl-4">Reviews Section</h3>
-                <ContextEditorCard title="Testimonials Title" textField="testimonialsSectionTitle" sizeField="testimonialsSectionTitleSize" colorField="testimonialsSectionTitleColor" config={config} handleFieldChange={handleFieldChange} />
-                <ContextEditorCard title="Reviews Sub-Heading" textField="testimonialsSectionSub" sizeField="testimonialsSectionSubSize" colorField="testimonialsSectionSubColor" config={config} handleFieldChange={handleFieldChange} isTextArea />
-             </div>
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-red-600 pl-4">Map Section</h3>
-                <ContextEditorCard title="Map Section Title" textField="mapSectionTitle" sizeField="mapSectionTitleSize" colorField="mapSectionTitleColor" config={config} handleFieldChange={handleFieldChange} />
-                <ContextEditorCard title="Map Sub-Headline" textField="mapSectionSub" sizeField="mapSectionSubSize" colorField="mapSectionSubColor" config={config} handleFieldChange={handleFieldChange} />
-             </div>
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-gray-900 pl-4">FAQ Section</h3>
-                <ContextEditorCard title="FAQ Section Title" textField="faqSectionTitle" sizeField="faqSectionTitleSize" colorField="faqSectionTitleColor" config={config} handleFieldChange={handleFieldChange} />
-                <ContextEditorCard title="FAQ Sub-Heading" textField="faqSectionSub" sizeField="faqSectionSubSize" colorField="faqSectionSubColor" config={config} handleFieldChange={handleFieldChange} isTextArea />
-             </div>
-          </div>
-        )}
-
-        {/* BUTTONS TAB */}
-        {activeTab === 'buttons' && (
-          <div className="animate-fade-in space-y-10">
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 flex justify-between items-center">
-                <div>
-                   <h3 className="text-2xl font-black uppercase tracking-tighter">Button Hub</h3>
-                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Configure visibility and style for all site buttons</p>
-                </div>
-                <div className="bg-green-100 p-4 rounded-full text-green-600">
-                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
-                </div>
-             </div>
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <ButtonEditorCard title="Hero Section Primary Button" textField="heroButtonText" colorField="heroButtonColor" sizeField="heroButtonSize" shapeField="heroButtonShape" visibilityField="showHeroButton" config={config} handleFieldChange={handleFieldChange} toggleVisibility={toggleVisibility} />
-                <ButtonEditorCard title="Lead Quote Submit Button" textField="quoteButtonText" colorField="quoteButtonColor" sizeField="quoteButtonSize" shapeField="quoteButtonShape" visibilityField="showQuoteButton" config={config} handleFieldChange={handleFieldChange} toggleVisibility={toggleVisibility} />
-                <ButtonEditorCard title="Map Modal Directions Button" textField="directionsButtonText" colorField="directionsButtonColor" sizeField="directionsButtonSize" shapeField="directionsButtonShape" visibilityField="showDirectionsButton" config={config} handleFieldChange={handleFieldChange} toggleVisibility={toggleVisibility} />
-                <ButtonEditorCard title="FAQ Contact/Call Button" textField="faqCallButtonText" colorField="faqCallButtonColor" sizeField="faqCallButtonSize" shapeField="faqCallButtonShape" visibilityField="showFaqCallButton" config={config} handleFieldChange={handleFieldChange} toggleVisibility={toggleVisibility} />
-             </div>
-          </div>
-        )}
-
-        {/* CONTACTS TAB */}
-        {activeTab === 'contacts' && (
+        {/* FAQ TAB */}
+        {activeTab === 'faq' && (
           <div className="animate-fade-in space-y-12">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <ContactFieldEditor 
-                title="Primary Phone Support"
-                valueField="phoneNumber"
-                colorField="phoneTextColor"
-                sizeField="phoneTextSize"
-                visibilityField="showPhoneNumber"
-                config={config}
-                handleFieldChange={handleFieldChange}
-                toggleVisibility={toggleVisibility}
-              />
-              <ContactFieldEditor 
-                title="Official Support Email"
-                valueField="email"
-                colorField="emailTextColor"
-                sizeField="emailTextSize"
-                visibilityField="showEmail"
-                config={config}
-                handleFieldChange={handleFieldChange}
-                toggleVisibility={toggleVisibility}
-              />
-              <ContactFieldEditor 
-                title="Yard/Pickup Address"
-                valueField="address"
-                colorField="addressTextColor"
-                sizeField="addressTextSize"
-                visibilityField="showAddress"
-                config={config}
-                handleFieldChange={handleFieldChange}
-                toggleVisibility={toggleVisibility}
-              />
-            </div>
-
-            <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
-              <div className="flex justify-between items-center border-b pb-6">
-                <div>
-                  <h3 className="text-xl font-black uppercase tracking-tight">Social Accounts & Redirect Links</h3>
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Manage global links and platform icons</p>
-                </div>
-                <div className="bg-blue-100 p-3 rounded-2xl text-blue-600">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-6 rounded-[2rem] border border-gray-100">
-                <div className="md:col-span-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Platform</label>
-                  <select 
-                    value={newSocial.platform} 
-                    onChange={e => setNewSocial({...newSocial, platform: e.target.value as any})}
-                    className="w-full p-3 bg-white border border-gray-100 rounded-xl font-bold text-xs"
-                  >
-                    <option>Facebook</option><option>Twitter</option><option>YouTube</option><option>TikTok</option><option>WhatsApp</option><option>Other</option>
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">URL / Redirect Target</label>
-                  <input 
-                    placeholder="https://..." 
-                    value={newSocial.url} 
-                    onChange={e => setNewSocial({...newSocial, url: e.target.value})}
-                    className="w-full p-3 bg-white border border-gray-100 rounded-xl font-bold text-xs"
-                  />
-                </div>
-                <div className="md:col-span-1 flex items-end">
-                  <button 
-                    onClick={addSocialLink}
-                    className="w-full bg-green-600 text-white p-3 rounded-xl font-black uppercase text-[10px] shadow-lg shadow-green-900/10 hover:bg-green-700 transition-all"
-                  >
-                    Add Link
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(config.socialLinks || []).map((link) => (
-                  <div key={link.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-gray-100 p-2 rounded-lg text-gray-600">
-                          {link.platform === 'Facebook' && <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>}
-                          {link.platform === 'WhatsApp' && <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>}
-                          {link.platform === 'Other' && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>}
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest">{link.platform}</span>
-                      </div>
-                      <button 
-                        onClick={() => updateSocialLink(link.id, 'isVisible', !link.isVisible)}
-                        className={`w-10 h-5 rounded-full relative transition-all ${link.isVisible ? 'bg-blue-600' : 'bg-gray-200'}`}
-                      >
-                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${link.isVisible ? 'left-5' : 'left-0.5'}`}></div>
-                      </button>
-                    </div>
-                    <input 
-                      value={link.url} 
-                      onChange={e => updateSocialLink(link.id, 'url', e.target.value)}
-                      className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-[10px] font-medium"
-                    />
-                    <button 
-                      onClick={() => removeSocialLink(link.id)}
-                      className="w-full py-2 bg-red-50 text-red-500 rounded-xl font-black uppercase text-[9px] hover:bg-red-100 transition-all"
-                    >
-                      Delete Link
-                    </button>
+             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
+                <div className="flex justify-between items-center border-b pb-6">
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tight">Add New FAQ</h3>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Changes made here update the homepage instantly</p>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'keywords' && (
-          <div className="animate-fade-in space-y-10">
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                   <h3 className="text-2xl font-black uppercase tracking-tighter">Keyword Intelligence & SEO Central</h3>
-                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Manage search optimization and badge display site-wide</p>
                 </div>
-                <div className="flex gap-4 w-full md:w-auto">
-                   <input 
-                      value={newKeyword} 
-                      onChange={e => setNewKeyword(e.target.value)} 
-                      placeholder="Add new phrase (e.g. Scrap Cars Milwaukee)" 
-                      className="flex-1 p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-bold text-sm"
-                      onKeyDown={e => e.key === 'Enter' && addKeyword()}
-                   />
-                   <button onClick={addKeyword} className="bg-green-600 text-white px-8 rounded-2xl font-black uppercase text-xs shadow-lg shadow-green-900/10 hover:bg-green-700 transition-all">Add</button>
-                </div>
-             </div>
-
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100 space-y-6">
-                   <h4 className="text-sm font-black uppercase tracking-widest border-l-4 border-yellow-500 pl-4">Keyword Display Settings</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
                    <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Universal Text Size</label>
-                        <select name="keywordTextSize" value={config.keywordTextSize || 'xs'} onChange={handleFieldChange} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-black uppercase">
-                          {['xs','sm','base','lg','xl'].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
-                        </select>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Text Color</label>
-                          <input type="color" name="keywordTextColor" value={config.keywordTextColor || '#9ca3af'} onChange={handleFieldChange} className="w-full h-11 rounded-xl border border-gray-100 p-0 bg-white cursor-pointer" />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Badge BG Color</label>
-                          <input type="color" name="keywordBgColor" value={config.keywordBgColor || '#ffffff'} onChange={handleFieldChange} className="w-full h-11 rounded-xl border border-gray-100 p-0 bg-white cursor-pointer" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Border Color</label>
-                        <input type="color" name="keywordBadgeColor" value={config.keywordBadgeColor || '#e5e7eb'} onChange={handleFieldChange} className="w-full h-11 rounded-xl border border-gray-100 p-0 bg-white cursor-pointer" />
+                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Question</label>
+                        <input placeholder="e.g. Do you provide cash today?" value={newFAQ.question} onChange={e => setNewFAQ({...newFAQ, question: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-black text-sm outline-none focus:ring-2 focus:ring-green-500 bg-white" />
                       </div>
                    </div>
-                </div>
-
-                <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100 space-y-6">
-                   <h4 className="text-sm font-black uppercase tracking-widest border-l-4 border-green-600 pl-4">Section Visibility & Usage Map</h4>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100">
-                         <p className="text-[9px] font-black text-gray-400 uppercase mb-4 tracking-widest">Main Header/Hero Area Previews</p>
-                         <div className="flex flex-wrap gap-2">
-                            {visibleKeywordsArray.slice(0, 5).map((kw, i) => (
-                              <span key={i} className={`px-2 py-1 rounded-md border font-black uppercase ${getSizeClass(config.keywordTextSize)}`} style={{ color: config.keywordTextColor, borderColor: config.keywordBadgeColor, backgroundColor: config.keywordBgColor }}>{kw}</span>
-                            ))}
-                            {visibleKeywordsArray.length > 5 && <span className="text-[9px] text-gray-400 font-bold self-center">+{visibleKeywordsArray.length - 5} more</span>}
-                         </div>
+                   <div className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Answer</label>
+                        <textarea placeholder="Write the answer..." value={newFAQ.answer} onChange={e => setNewFAQ({...newFAQ, answer: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-medium text-sm outline-none focus:ring-2 focus:ring-green-500 bg-white" rows={2} />
                       </div>
-                      <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100">
-                         <p className="text-[9px] font-black text-gray-400 uppercase mb-4 tracking-widest">Lead Quote System Badges</p>
-                         <div className="flex flex-wrap gap-2">
-                            {visibleKeywordsArray.slice(0, 4).map((kw, i) => (
-                              <div key={i} className="flex items-center gap-1.5 bg-white border px-2 py-1 rounded-lg shadow-sm" style={{ borderColor: config.keywordBadgeColor }}>
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                                <span className={`font-black uppercase ${getSizeClass(config.keywordTextSize)}`} style={{ color: config.keywordTextColor }}>{kw}</span>
-                              </div>
-                            ))}
-                         </div>
-                      </div>
+                   </div>
+                   <div className="md:col-span-2">
+                     <button onClick={addFAQ} className="w-full bg-green-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg hover:bg-green-700 transition-all tracking-widest">Post New FAQ</button>
                    </div>
                 </div>
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {allKeywords.map((kw, i) => {
-                  const isHidden = hiddenKeywordsArray.includes(kw);
-                  return (
-                    <div key={i} className={`p-5 rounded-[2rem] border flex flex-col gap-4 transition-all ${isHidden ? 'bg-gray-100/50 border-gray-200' : 'bg-white border-green-100 shadow-sm'}`}>
-                      <input 
-                        defaultValue={kw}
-                        onBlur={(e) => {
-                          const newVal = e.target.value.trim();
-                          if (newVal && newVal !== kw) {
-                            const updated = allKeywords.map(k => k === kw ? newVal : k).join(', ');
-                            const newConfig = { ...config, seoKeywords: updated };
-                            setConfig(newConfig);
-                            saveConfig(newConfig);
-                          }
-                        }}
-                        className={`font-black text-xs uppercase bg-transparent outline-none border-b border-transparent focus:border-green-500 pb-1 ${isHidden ? 'text-gray-400' : 'text-gray-900'}`}
-                      />
-                      <div className="flex gap-2">
-                        <button onClick={() => toggleKeywordVisibility(kw)} className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${isHidden ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'}`}>{isHidden ? 'Make Visible' : 'Hide from UI'}</button>
-                        <button onClick={() => removeKeyword(kw)} className="bg-red-50 text-red-500 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                      </div>
-                    </div>
-                  );
-                })}
+             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
+                <h3 className="text-xl font-black uppercase tracking-tight">Manage Current Site FAQ</h3>
+                <div className="grid grid-cols-1 gap-6">
+                   {faqs.map(f => {
+                     const isEditing = editingFaqId === f.id;
+                     return (
+                       <div key={f.id} className={`p-6 rounded-[2rem] border transition-all ${isEditing ? 'border-green-600 bg-green-50/10 ring-2 ring-green-100' : 'border-gray-100 bg-white shadow-sm'}`}>
+                         {isEditing ? (
+                           <div className="space-y-6">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <div>
+                                  <label className="text-[9px] font-black text-green-600 uppercase mb-1 block tracking-widest">Question</label>
+                                  <input id={`edit-q-${f.id}`} defaultValue={f.question} className="w-full p-4 bg-white border border-green-200 rounded-xl font-black text-sm outline-none" />
+                               </div>
+                               <div>
+                                  <label className="text-[9px] font-black text-green-600 uppercase mb-1 block tracking-widest">Answer</label>
+                                  <textarea id={`edit-a-${f.id}`} defaultValue={f.answer} className="w-full p-4 bg-white border border-green-200 rounded-xl font-medium text-sm outline-none" rows={3} />
+                               </div>
+                             </div>
+                             <div className="flex gap-4">
+                               <button onClick={() => {
+                                   const qInput = document.getElementById(`edit-q-${f.id}`) as HTMLInputElement;
+                                   const aInput = document.getElementById(`edit-a-${f.id}`) as HTMLTextAreaElement;
+                                   updateFAQ(f.id!, qInput.value, aInput.value);
+                                 }} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow-lg tracking-widest">SAVE & SYNC TO HOME</button>
+                               <button onClick={() => setEditingFaqId(null)} className="px-8 bg-gray-200 text-gray-700 py-3 rounded-xl font-black uppercase text-xs">CANCEL</button>
+                             </div>
+                           </div>
+                         ) : (
+                           <div className="flex justify-between items-center gap-6">
+                             <div className="flex-1">
+                               <p className="font-black text-sm text-gray-900 uppercase tracking-tight mb-1">{f.question}</p>
+                               <p className="text-xs text-gray-500 font-medium line-clamp-1 italic">{f.answer}</p>
+                             </div>
+                             <div className="flex items-center gap-3">
+                               <button onClick={() => setEditingFaqId(f.id!)} className="p-3 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Edit Question">
+                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                               </button>
+                               <button onClick={() => deleteFAQ(f.id!)} className="p-3 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Remove Question">
+                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                               </button>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                     );
+                   })}
+                </div>
              </div>
-          </div>
-        )}
-
-        {/* GALLERY TAB */}
-        {activeTab === 'gallery' && (
-          <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8 animate-fade-in">
-             <div className="flex justify-between items-center border-b pb-6">
-               <div>
-                  <h3 className="text-xl font-black uppercase tracking-tight">Gallery Assets</h3>
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Add, update, and describe work-site photos</p>
-               </div>
-               <button onClick={() => galleryInput.current?.click()} className="bg-green-600 text-white px-8 py-3 rounded-xl font-black uppercase text-xs shadow-lg shadow-green-900/10 hover:bg-green-700 transition-all">Upload New Image</button>
-               <input type="file" ref={galleryInput} className="hidden" onChange={e => handleUpload(e, 'gallery')} />
-               <input type="file" ref={replaceInput} className="hidden" onChange={e => handleUpload(e, 'replace')} />
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {(config.gallery || []).map(img => (
-                  <div key={img.id} className="bg-white p-5 rounded-[2.5rem] border border-gray-100 shadow-md space-y-5 transition-transform hover:scale-[1.02]">
-                    <div className="relative group overflow-hidden rounded-2xl aspect-square bg-gray-50 border border-gray-100">
-                      <img src={img.url} className="w-full h-full object-cover" alt="Gallery item" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                         <button 
-                            onClick={() => { setReplacingId(img.id); replaceInput.current?.click(); }}
-                            className="bg-white text-gray-900 p-3 rounded-full shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-transform"
-                            title="Replace Image"
-                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                         </button>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Display Title</label>
-                         <input value={img.title || ''} onChange={e => updateGalleryText(img.id, 'title', e.target.value)} className="w-full p-2.5 bg-gray-50 border border-gray-100 rounded-xl font-black uppercase text-[10px] focus:bg-white focus:ring-1 focus:ring-green-500 outline-none" placeholder="Enter title..." />
-                      </div>
-                      <div>
-                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Image Description</label>
-                         <textarea value={img.desc || ''} onChange={e => updateGalleryText(img.id, 'desc', e.target.value)} className="w-full p-2.5 bg-gray-50 border border-gray-100 rounded-xl font-bold text-[10px] focus:bg-white focus:ring-1 focus:ring-green-500 outline-none" placeholder="Enter description..." rows={2} />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                       <button onClick={() => { setReplacingId(img.id); replaceInput.current?.click(); }} className="bg-blue-50 text-blue-600 py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-blue-100 transition-all">Replace</button>
-                       <button onClick={() => deletePhoto(img.id)} className="bg-red-50 text-red-500 py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-red-100 transition-all">Delete</button>
-                    </div>
-                  </div>
-                ))}
-             </div>
-          </div>
-        )}
-
-        {/* SCHEMA TAB */}
-        {activeTab === 'seo' && (
-          <div className="bg-white p-10 rounded-[3rem] shadow-xl space-y-8 border border-gray-100 animate-fade-in">
-             <h3 className="text-xl font-black uppercase border-l-4 border-green-600 pl-4">JSON-LD Structured Data</h3>
-             <textarea name="customSchema" value={config.customSchema || ''} onChange={handleFieldChange} rows={18} className="w-full p-6 bg-gray-950 text-green-400 font-mono text-sm rounded-3xl" spellCheck={false} />
           </div>
         )}
 
@@ -899,24 +578,34 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
                 <div className="flex justify-between items-center border-b pb-6">
                   <div>
                     <h3 className="text-xl font-black uppercase tracking-tight">Post New Review</h3>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Add manual feedback to the site rotation</p>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Add manual feedback with custom avatar branding</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
                    <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Customer Name</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Customer Name</label>
                         <input placeholder="e.g. John D." value={newReview.name} onChange={e => setnewReview({...newReview, name: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-bold outline-none focus:ring-2 focus:ring-green-500 bg-white" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                         <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Avatar Color</label>
+                            <input type="color" value={newReview.logoColor} onChange={e => setnewReview({...newReview, logoColor: e.target.value})} className="w-full h-12 rounded-xl border border-gray-200 p-1 bg-white cursor-pointer" />
+                         </div>
+                         <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Image URL (Optional)</label>
+                            <input placeholder="https://..." value={newReview.imageUrl} onChange={e => setnewReview({...newReview, imageUrl: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-bold outline-none focus:ring-2 focus:ring-green-500 bg-white text-xs" />
+                         </div>
                       </div>
                    </div>
                    <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Review Text</label>
-                        <textarea placeholder="Write review content..." value={newReview.text} onChange={e => setnewReview({...newReview, text: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-medium outline-none focus:ring-2 focus:ring-green-500 bg-white" rows={2} />
+                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Review Text</label>
+                        <textarea placeholder="Write review content..." value={newReview.text} onChange={e => setnewReview({...newReview, text: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-medium outline-none focus:ring-2 focus:ring-green-500 bg-white" rows={4} />
                       </div>
                    </div>
                    <div className="md:col-span-2">
-                     <button onClick={addReview} className="w-full bg-green-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg hover:bg-green-700 transition-all">Post Review to Live Site</button>
+                     <button onClick={addReview} className="w-full bg-green-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg hover:bg-green-700 transition-all tracking-widest">Post Review to Live Site</button>
                    </div>
                 </div>
              </div>
@@ -934,6 +623,16 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
                                <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block">Customer Name</label>
                                <input id={`edit-name-${t.id}`} defaultValue={t.name} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-black uppercase text-xs outline-none" />
                              </div>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                   <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block">Logo Color</label>
+                                   <input type="color" id={`edit-color-${t.id}`} defaultValue={t.logoColor || '#16a34a'} className="w-full h-10 rounded-xl border border-blue-200 p-1 bg-white" />
+                                </div>
+                                <div>
+                                   <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block">Image URL</label>
+                                   <input id={`edit-url-${t.id}`} defaultValue={t.imageUrl || ''} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-bold text-[10px]" />
+                                </div>
+                             </div>
                              <div>
                                <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block">Review Text</label>
                                <textarea id={`edit-text-${t.id}`} defaultValue={t.text} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-medium text-xs outline-none" rows={4} />
@@ -942,18 +641,28 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
                                <button onClick={() => {
                                    const nameInput = document.getElementById(`edit-name-${t.id}`) as HTMLInputElement;
                                    const textInput = document.getElementById(`edit-text-${t.id}`) as HTMLTextAreaElement;
-                                   updateReview(t.id, nameInput.value, textInput.value);
-                                 }} className="bg-blue-600 text-white py-2 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-blue-900/10">Save Changes</button>
+                                   const urlInput = document.getElementById(`edit-url-${t.id}`) as HTMLInputElement;
+                                   const colorInput = document.getElementById(`edit-color-${t.id}`) as HTMLInputElement;
+                                   updateReview(t.id, nameInput.value, textInput.value, urlInput.value, colorInput.value);
+                                 }} className="bg-blue-600 text-white py-2 rounded-xl text-[10px] font-black uppercase shadow-lg">Save Changes</button>
                                <button onClick={() => setEditingReviewId(null)} className="bg-gray-200 text-gray-700 py-2 rounded-xl text-[10px] font-black uppercase">Cancel</button>
                              </div>
                            </div>
                          ) : (
                            <div className="flex flex-col h-full">
                              <div className="flex justify-between items-start mb-4">
-                               <div>
-                                 <p className="font-black text-sm uppercase text-gray-900 leading-none">{t.name}</p>
-                                 <div className="flex gap-0.5 mt-1">
-                                    {[...Array(5)].map((_, i) => <div key={i} className="w-2 h-2 bg-yellow-400 rounded-full"></div>)}
+                               <div className="flex items-center gap-3">
+                                 <div 
+                                    className="w-10 h-10 rounded-xl text-white flex items-center justify-center font-black text-sm uppercase shadow-sm"
+                                    style={{ backgroundColor: t.logoColor || '#16a34a' }}
+                                 >
+                                    {t.name?.[0] || 'U'}
+                                 </div>
+                                 <div>
+                                   <p className="font-black text-sm uppercase text-gray-900 leading-none">{t.name}</p>
+                                   <div className="flex gap-0.5 mt-1">
+                                      {[...Array(5)].map((_, i) => <div key={i} className="w-2 h-2 bg-yellow-400 rounded-full"></div>)}
+                                   </div>
                                  </div>
                                </div>
                                <div className="flex gap-2">
@@ -973,109 +682,58 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
           </div>
         )}
 
-        {/* FAQ TAB - FULLY REFINED WITH ADD/EDIT/DELETE */}
-        {activeTab === 'faq' && (
-          <div className="animate-fade-in space-y-12">
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
-                <div className="flex justify-between items-center border-b pb-6">
-                  <div>
-                    <h3 className="text-xl font-black uppercase tracking-tight">FAQ Creator</h3>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Add new frequently asked questions to the support section</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
-                   <div className="space-y-4">
-                      <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Question</label>
-                        <input placeholder="e.g. Do you buy cars with no title?" value={newFAQ.question} onChange={e => setNewFAQ({...newFAQ, question: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-black text-sm outline-none focus:ring-2 focus:ring-green-500 bg-white" />
-                      </div>
-                   </div>
-                   <div className="space-y-4">
-                      <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Answer</label>
-                        <textarea placeholder="Provide the detailed answer here..." value={newFAQ.answer} onChange={e => setNewFAQ({...newFAQ, answer: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-medium text-sm outline-none focus:ring-2 focus:ring-green-500 bg-white" rows={2} />
-                      </div>
-                   </div>
-                   <div className="md:col-span-2">
-                     <button onClick={addFAQ} className="w-full bg-green-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg hover:bg-green-700 transition-all tracking-widest">Post New FAQ Entry</button>
-                   </div>
-                </div>
+        {/* FORMS / LEADS TAB */}
+        {activeTab === 'leads' && (
+          <div className="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden animate-fade-in border-gray-100">
+             <div className="p-8 border-b bg-gray-50 flex justify-between items-center">
+               <h3 className="text-xl font-black uppercase tracking-tight">Master Lead Database</h3>
+               <button onClick={fetchLeads} className="text-xs font-black bg-white px-4 py-2 border rounded-lg hover:bg-gray-100">Refresh</button>
              </div>
-
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
-                <h3 className="text-xl font-black uppercase tracking-tight">Active FAQ Library</h3>
-                <div className="grid grid-cols-1 gap-6">
-                   {faqs.map(f => {
-                     const isEditing = editingFaqId === f.id;
-                     return (
-                       <div key={f.id} className={`p-6 rounded-[2rem] border transition-all ${isEditing ? 'border-green-600 bg-green-50/10 ring-2 ring-green-100' : 'border-gray-100 bg-white shadow-sm'}`}>
-                         {isEditing ? (
-                           <div className="space-y-6">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                               <div>
-                                  <label className="text-[9px] font-black text-green-600 uppercase mb-1 block tracking-widest">Edit Question</label>
-                                  <input 
-                                    id={`edit-q-${f.id}`}
-                                    defaultValue={f.question}
-                                    className="w-full p-4 bg-white border border-green-200 rounded-xl font-black text-sm outline-none"
-                                  />
-                               </div>
-                               <div>
-                                  <label className="text-[9px] font-black text-green-600 uppercase mb-1 block tracking-widest">Edit Answer</label>
-                                  <textarea 
-                                    id={`edit-a-${f.id}`}
-                                    defaultValue={f.answer}
-                                    className="w-full p-4 bg-white border border-green-200 rounded-xl font-medium text-sm outline-none"
-                                    rows={3}
-                                  />
-                               </div>
-                             </div>
-                             <div className="flex gap-4">
-                               <button 
-                                 onClick={() => {
-                                   const qInput = document.getElementById(`edit-q-${f.id}`) as HTMLInputElement;
-                                   const aInput = document.getElementById(`edit-a-${f.id}`) as HTMLTextAreaElement;
-                                   updateFAQ(f.id!, qInput.value, aInput.value);
-                                 }}
-                                 className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow-lg tracking-widest"
-                               >
-                                 Save FAQ Changes
-                               </button>
-                               <button 
-                                 onClick={() => setEditingFaqId(null)}
-                                 className="px-8 bg-gray-200 text-gray-700 py-3 rounded-xl font-black uppercase text-xs tracking-widest"
-                               >
-                                 Cancel
-                               </button>
-                             </div>
-                           </div>
-                         ) : (
-                           <div className="flex justify-between items-center gap-6">
-                             <div className="flex-1">
-                               <p className="font-black text-sm text-gray-900 uppercase tracking-tight mb-1">{f.question}</p>
-                               <p className="text-xs text-gray-500 font-medium line-clamp-1 italic">{f.answer}</p>
-                             </div>
-                             <div className="flex items-center gap-3">
-                               <button 
-                                  onClick={() => setEditingFaqId(f.id!)}
-                                  className="p-3 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                  title="Edit FAQ"
-                               >
-                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                               </button>
-                               <button 
-                                  onClick={() => deleteFAQ(f.id!)}
-                                  className="p-3 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                                  title="Delete FAQ"
-                               >
-                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                               </button>
-                             </div>
-                           </div>
-                         )}
-                       </div>
-                     );
-                   })}
+             <div className="overflow-x-auto">
+               <table className="w-full text-left min-w-[1200px]">
+                 <thead className="bg-gray-100 text-[10px] font-black uppercase text-gray-400">
+                   <tr>
+                     <th className="px-6 py-5">Date</th><th className="px-6 py-5">Form ID</th><th className="px-6 py-5">Customer</th><th className="px-6 py-5">Phone</th><th className="px-6 py-5">Vehicle</th><th className="px-6 py-5">Action</th>
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-gray-100">
+                   {leads.map((l) => (
+                     <tr key={l.id} className="hover:bg-gray-50">
+                       <td className="px-6 py-5 text-[11px] font-bold">{new Date(l.created_at).toLocaleDateString()}</td>
+                       <td className="px-6 py-5 text-[11px] font-black text-green-700">{l.form_number}</td>
+                       <td className="px-6 py-5 font-black uppercase text-[11px]">{l.first_name} {l.last_name}</td>
+                       <td className="px-6 py-5 text-green-600 font-black text-[11px]">{l.phone}</td>
+                       <td className="px-6 py-5 font-black text-[11px] uppercase">{l.year} {l.make} {l.model}</td>
+                       <td className="px-6 py-5"><button onClick={() => setSelectedLead(l)} className="bg-green-600 text-white px-4 py-2 rounded-lg text-[10px] font-black">RECEIPT</button></td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+             </div>
+          </div>
+        )}
+        
+        {/* Identity Tab */}
+        {activeTab === 'branding' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100">
+                <h3 className="text-xl font-black uppercase border-l-4 border-green-600 pl-4 mb-8">Business Identity</h3>
+                {[1, 2, 3, 4].map(n => (
+                  <div key={n} className="bg-gray-50 p-6 rounded-2xl mb-4">
+                    <label className="text-[10px] font-black text-gray-400 uppercase">Part {n}</label>
+                    <div className="flex gap-4">
+                      <input name={`businessNamePart${n}`} value={(config as any)[`businessNamePart${n}`] || ''} onChange={handleFieldChange} className="flex-1 p-4 bg-white border rounded-xl font-black uppercase text-sm" />
+                      <input type="color" name={`businessNameColor${n}`} value={(config as any)[`businessNameColor${n}`] || '#000000'} onChange={handleFieldChange} className="w-12 h-12 rounded-lg cursor-pointer" />
+                    </div>
+                  </div>
+                ))}
+             </div>
+             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100">
+                <h3 className="text-xl font-black uppercase border-l-4 border-green-600 pl-4 mb-8">Assets</h3>
+                <div className="p-8 bg-gray-50 rounded-2xl text-center">
+                    <button onClick={() => logoInput.current?.click()} className="bg-green-600 text-white px-8 py-3 rounded-xl text-xs font-black">Upload Logo</button>
+                    <input type="file" ref={logoInput} className="hidden" onChange={e => handleUpload(e, 'logo')} />
+                    {config.logo && <img src={config.logo} className="h-16 mx-auto mt-6" alt="Logo" />}
                 </div>
              </div>
           </div>
@@ -1087,48 +745,19 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm overflow-y-auto animate-fade-in">
            <div className="bg-white w-full max-w-2xl rounded-[1rem] shadow-2xl overflow-hidden border border-gray-100 my-auto">
               <div className="p-4 border-b flex justify-end bg-gray-50 print:hidden">
-                 <button onClick={() => setSelectedLead(null)} className="text-2xl text-gray-400 hover:text-red-500 px-4">×</button>
+                 <button onClick={() => setSelectedLead(null)} className="text-2xl text-gray-400 px-4">×</button>
               </div>
               <div className="p-12 bg-white" ref={receiptRef}>
-                 <div className="flex justify-between items-start mb-12">
-                    <div className="flex items-start space-x-4">
-                      {config.logo ? (
-                         <img src={config.logo} className="h-12 w-auto object-contain" alt="Logo" />
-                      ) : (
-                         <div className="bg-green-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-black">K</div>
-                      )}
-                      <div>
-                        <h4 className="font-black uppercase text-base leading-tight tracking-tight text-gray-900">{fullBusinessName}</h4>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">MILWAUKEE, WI • {config.phoneNumber}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">FORM NUMBER</p>
-                       <p className="text-lg font-black text-green-600 leading-none mb-4">{selectedLead.form_number}</p>
-                    </div>
-                 </div>
-                 <div className="h-[1px] bg-gray-100 w-full mb-12"></div>
-                 <div className="grid grid-cols-2 gap-x-12 gap-y-10 text-left">
-                   <div className="space-y-8">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-1">CONTACT INFO</p>
-                      <div><p className="text-[10px] font-black text-gray-400 mb-1">FIRST NAME</p><p className="font-black text-gray-900 uppercase text-sm">{selectedLead.first_name}</p></div>
-                      <div><p className="text-[10px] font-black text-gray-400 mb-1">LAST NAME</p><p className="font-black text-gray-900 uppercase text-sm">{selectedLead.last_name}</p></div>
-                      <div><p className="text-[10px] font-black text-gray-400 mb-1">PHONE</p><p className="font-black text-green-600 text-sm">{selectedLead.phone}</p></div>
-                   </div>
-                   <div className="space-y-8">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-1">VEHICLE DETAILS</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div><p className="text-[10px] font-black text-gray-400 mb-1">YEAR</p><p className="font-black text-gray-900 text-sm">{selectedLead.year}</p></div>
-                        <div><p className="text-[10px] font-black text-gray-400 mb-1">MAKE</p><p className="font-black text-gray-900 text-sm uppercase">{selectedLead.make}</p></div>
-                        <div><p className="text-[10px] font-black text-gray-400 mb-1">MODEL</p><p className="font-black text-gray-900 text-sm uppercase">{selectedLead.model}</p></div>
-                      </div>
-                      <div><p className="text-[10px] font-black text-gray-400 mb-1">CONDITION</p><p className="font-black text-red-600 text-xs uppercase">{selectedLead.condition}</p></div>
-                   </div>
+                 <h4 className="font-black uppercase text-base mb-8 tracking-tighter text-green-600">OFFICIAL QUOTE: {selectedLead.form_number}</h4>
+                 <div className="space-y-4 text-sm font-bold text-gray-900 uppercase">
+                    <p>CUSTOMER: {selectedLead.first_name} {selectedLead.last_name}</p>
+                    <p>PHONE: {selectedLead.phone}</p>
+                    <p>VEHICLE: {selectedLead.year} {selectedLead.make} {selectedLead.model}</p>
+                    <p>CONDITION: {selectedLead.condition}</p>
                  </div>
               </div>
               <div className="p-8 bg-gray-50 border-t flex gap-4 print:hidden">
-                <button onClick={downloadReceipt} className="flex-1 bg-green-600 text-white py-4 rounded-xl font-black text-xs uppercase shadow-xl hover:bg-green-700 transition-all tracking-widest">DOWNLOAD IMAGE</button>
-                <button onClick={() => window.print()} className="flex-1 bg-gray-950 text-white py-4 rounded-xl font-black text-xs uppercase shadow-xl hover:bg-gray-800 transition-all tracking-widest">PRINT HARDCOPY</button>
+                <button onClick={downloadReceipt} className="flex-1 bg-green-600 text-white py-4 rounded-xl font-black text-xs">DOWNLOAD IMAGE</button>
               </div>
            </div>
         </div>
@@ -1152,22 +781,24 @@ const App: React.FC = () => {
         const { data: faqRows } = await supabase.from('faqs').select('*').order('id', { ascending: true });
 
         let mergedConfig = { ...INITIAL_CONFIG };
-        if (configRow?.config) {
-          mergedConfig = { ...mergedConfig, ...configRow.config };
-        }
-        
+        if (configRow?.config) mergedConfig = { ...mergedConfig, ...configRow.config };
         if (galleryRows?.length) {
           mergedConfig.gallery = galleryRows.map(g => ({ id: g.id, url: g.url, title: g.title || 'Job Site', desc: g.description || 'Milwaukee' }));
         }
 
         setConfig(mergedConfig);
-        if (reviewRows) setTestimonials(reviewRows);
+        if (reviewRows) {
+          setTestimonials(reviewRows.map(r => ({
+            id: r.id,
+            name: r.name,
+            text: r.text,
+            imageUrl: r.image_url,
+            logoColor: r.logo_color,
+            date: r.date
+          })));
+        }
         if (faqRows?.length) setFaqs(faqRows); else setFaqs(FAQ_DATA);
-      } catch (err) { 
-        console.error("Initialization Error:", err); 
-      } finally { 
-        setIsLoading(false); 
-      }
+      } catch (err) { console.error(err); } finally { setIsLoading(false); }
     };
     fetchEverything();
   }, []);
@@ -1175,7 +806,7 @@ const App: React.FC = () => {
   if (isLoading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-white font-black uppercase tracking-[0.4em]">
       <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mb-8"></div>
-      <div>MKE HQ CONNECTING...</div>
+      <div>SYNCING DATA...</div>
     </div>
   );
 

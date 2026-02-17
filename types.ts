@@ -11,6 +11,7 @@ export interface Testimonial {
   name: string;
   text: string;
   imageUrl?: string;
+  logoColor?: string; // Custom background color for initials
   youtubeUrl?: string;
   date: string;
 }
