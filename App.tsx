@@ -579,26 +579,45 @@ const App: React.FC = () => {
           })));
         }
         if (faqRows?.length) setFaqs(faqRows); else setFaqs(FAQ_DATA);
-      } catch (err) { console.error(err); } finally { setIsLoading(false); }
+      } catch (err) { console.error(err); } finally { 
+        // Force a minimum loading time for the aesthetic brand feel
+        setTimeout(() => setIsLoading(false), 1200);
+      }
     };
     fetchEverything();
   }, []);
 
-  if (isLoading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-white font-black uppercase tracking-[0.4em] p-6 text-center">
-      <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mb-8"></div>
-      <div className="text-sm sm:text-base">Syncing Milwaukee Cloud...</div>
-    </div>
-  );
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-[1000] bg-gray-950 flex flex-col items-center justify-center p-6 text-center">
+         <div className="relative mb-8">
+            <div className="w-20 h-20 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+               <div className="w-12 h-12 bg-green-600 rounded-lg animate-pulse flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+               </div>
+            </div>
+         </div>
+         <h1 className="text-white text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-2 animate-fade-in">
+           Welcome to <span className="text-green-600">On-Kaul</span> Auto Salvage
+         </h1>
+         <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-[10px] animate-pulse">
+           Milwaukee's Premier Junk Car Buyer
+         </p>
+      </div>
+    );
+  }
 
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
         <Header config={config} />
-        <Routes>
-          <Route path="/" element={<HomePage config={config} testimonials={testimonials} faqs={faqs} />} />
-          <Route path="/admin" element={<AdminPanel config={config} setConfig={setConfig} testimonials={testimonials} setTestimonials={setTestimonials} faqs={faqs} setFaqs={setFaqs} />} />
-        </Routes>
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<HomePage config={config} testimonials={testimonials} faqs={faqs} />} />
+            <Route path="/admin" element={<AdminPanel config={config} setConfig={setConfig} testimonials={testimonials} setTestimonials={setTestimonials} faqs={faqs} setFaqs={setFaqs} />} />
+          </Routes>
+        </main>
         <Footer config={config} />
       </div>
     </Router>
