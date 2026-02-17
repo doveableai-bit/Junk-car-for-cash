@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { SiteConfig, TextSize } from '../types';
+import { junkCarService } from '../services/geminiService';
 
 interface QuoteFormProps {
   config: SiteConfig;
@@ -25,6 +26,8 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ config }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [generatedId, setGeneratedId] = useState('');
+  const [valuation, setValuation] = useState<{ range: string; explanation: string } | null>(null);
+  const [isValuating, setIsValuating] = useState(false);
 
   const btnSizeClasses = {
     sm: 'py-3 text-sm', md: 'py-4 text-base', lg: 'py-5 text-xl', xl: 'py-6 text-2xl font-black'
@@ -37,6 +40,22 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ config }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGetEstimate = async () => {
+    if (!formData.make || !formData.model || !formData.year) {
+      alert("Please enter Year, Make, and Model first!");
+      return;
+    }
+    setIsValuating(true);
+    const result = await junkCarService.estimateValue({
+      year: formData.year,
+      make: formData.make,
+      model: formData.model,
+      condition: formData.condition
+    });
+    setValuation(result);
+    setIsValuating(false);
   };
 
   const generateFormNumber = () => {
@@ -129,6 +148,21 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ config }) => {
                 ))}
               </div>
             </div>
+            
+            {valuation && (
+              <div className="mb-10 bg-green-600 p-8 rounded-[2rem] text-white shadow-2xl animate-fade-in border-4 border-white">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-white text-green-600 p-1.5 rounded-lg">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">AI Market Analysis</span>
+                </div>
+                <h4 className="text-3xl font-black uppercase tracking-tighter mb-2">{valuation.range}</h4>
+                <p className="text-sm font-bold opacity-90 leading-relaxed">{valuation.explanation}</p>
+                <div className="mt-4 pt-4 border-t border-white/20 text-[9px] font-black uppercase tracking-widest opacity-60">Estimated values based on current Milwaukee scrap market rates</div>
+              </div>
+            )}
+
             <div className="space-y-6">
               {[
                 { t: "No Hassle Selling", d: "Experience the easiest way to get rid of your car with zero stress. We handle everything." },
@@ -164,7 +198,22 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ config }) => {
               <select name="condition" value={formData.condition} onChange={handleInputChange} className="w-full px-4 py-4 bg-gray-50 border-none rounded-xl font-bold"><option>Running</option><option>Non-Running</option><option>Wrecked</option><option>Scrap Metal</option></select>
               <select name="titleStatus" value={formData.titleStatus} onChange={handleInputChange} className="w-full px-4 py-4 bg-gray-50 border-none rounded-xl font-bold"><option>Clean Title</option><option>Lost Title</option><option>No Title</option></select>
             </div>
-            <input required name="address" placeholder="Pickup Location (e.g. Milwaukee, WI)" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-4 bg-gray-50 border-none rounded-xl mb-8 font-bold" />
+            <input required name="address" placeholder="Pickup Location (e.g. Milwaukee, WI)" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-4 bg-gray-50 border-none rounded-xl mb-6 font-bold" />
+            
+            <button 
+              type="button"
+              onClick={handleGetEstimate}
+              disabled={isValuating}
+              className="w-full mb-4 bg-gray-900 text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg hover:bg-black transition-all flex items-center justify-center gap-2"
+            >
+              {isValuating ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+              )}
+              {isValuating ? 'Calculating Market Value...' : 'Get Instant Market Value'}
+            </button>
+
             {config.showQuoteButton && (
               <button 
                 type="submit" disabled={isSubmitting}
