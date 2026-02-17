@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
     { name: 'Home', path: '/', isHash: true, hash: 'home' },
     { name: 'Quote Form', path: '/', isHash: true, hash: 'quote' },
     { name: 'FAQ', path: '/', isHash: true, hash: 'faq' },
-    { name: 'Contact Us', path: '/', isHash: true, hash: 'quote' },
+    { name: 'Contact Us', path: '/', isHash: true, hash: 'contact' },
   ];
 
   const handleNavClick = (item: typeof navItems[0]) => {
@@ -76,7 +76,12 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
       if (location.pathname === '/') {
         const element = document.getElementById(item.hash!);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
+          const offset = 100;
+          const bodyRect = document.body.getBoundingClientRect().top;
+          const elementRect = element.getBoundingClientRect().top;
+          const elementPosition = elementRect - bodyRect;
+          const offsetPosition = elementPosition - offset;
+          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
         }
       } else {
         navigate(`/#${item.hash}`);
@@ -87,11 +92,28 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
     setIsMenuOpen(false);
   };
 
+  const handleHomeIconClick = () => {
+    if (location.pathname === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigate('/');
+    }
+  };
+
   const handleFormIconClick = () => {
     if (location.pathname === '/') {
       const element = document.getElementById('quote');
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        const offset = 100; // Header height plus extra padding
+        const bodyRect = document.body.getBoundingClientRect().top;
+        const elementRect = element.getBoundingClientRect().top;
+        const elementPosition = elementRect - bodyRect;
+        const offsetPosition = elementPosition - offset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
       }
     } else {
       navigate('/#quote');
@@ -106,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 py-2 sm:py-3">
         <div className="container mx-auto px-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center max-w-[50%] xs:max-w-[60%] sm:max-w-none" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <Link to="/" className="flex items-center max-w-[45%] xs:max-w-[55%] sm:max-w-none" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="flex items-center">
               {logo ? (
                 <div className="h-9 sm:h-12 md:h-14 w-auto overflow-hidden mr-2 sm:mr-3">
@@ -119,7 +141,7 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
                   </svg>
                 </div>
               )}
-              <span className="font-black text-[11px] xs:text-sm sm:text-lg md:text-xl tracking-tighter sm:tracking-tight uppercase flex flex-wrap items-center">
+              <span className="font-black text-[10px] xs:text-[11px] sm:text-lg md:text-xl tracking-tighter sm:tracking-tight uppercase flex flex-wrap items-center leading-tight">
                 {businessNamePart1 && <span style={{ color: businessNameColor1 || '#111827' }}>{businessNamePart1}</span>}
                 {businessNamePart2 && <span className="ml-1" style={{ color: businessNameColor2 || '#111827' }}>{businessNamePart2}</span>}
                 {businessNamePart3 && <span className="ml-1" style={{ color: businessNameColor3 || '#16a34a' }}>{businessNamePart3}</span>}
@@ -128,10 +150,11 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
             </div>
           </Link>
 
-          <div className="flex items-center space-x-1 sm:space-x-3">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+            {/* Map Icon */}
             <button 
               onClick={handleLocationIconClick}
-              className="p-2 sm:p-2.5 rounded-xl border-2 border-transparent sm:border-gray-100 bg-gray-50 sm:bg-white text-gray-500 hover:border-green-200 hover:text-green-600 transition-all"
+              className="p-2 sm:p-2.5 rounded-xl border-2 border-transparent sm:border-gray-50 bg-gray-50 sm:bg-white text-gray-500 hover:border-green-200 hover:text-green-600 transition-all flex flex-col items-center justify-center"
               aria-label="Map"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,13 +163,25 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
               </svg>
             </button>
 
+            {/* Form Icon */}
             <button 
               onClick={handleFormIconClick}
-              className="p-2 sm:p-2.5 rounded-xl border-2 border-transparent sm:border-gray-100 bg-gray-50 sm:bg-white text-gray-500 hover:border-green-200 hover:text-green-600 transition-all"
+              className="p-2 sm:p-2.5 rounded-xl border-2 border-transparent sm:border-gray-50 bg-gray-50 sm:bg-white text-gray-500 hover:border-green-200 hover:text-green-600 transition-all flex flex-col items-center justify-center"
               aria-label="Quote"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </button>
+
+            {/* Home Icon */}
+            <button 
+              onClick={handleHomeIconClick}
+              className="p-2 sm:p-2.5 rounded-xl border-2 border-transparent sm:border-gray-50 bg-gray-50 sm:bg-white text-gray-500 hover:border-green-200 hover:text-green-600 transition-all flex flex-col items-center justify-center"
+              aria-label="Home"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
             </button>
 
@@ -165,7 +200,7 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
             <div className="relative" ref={menuRef}>
               <button 
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className={`flex items-center space-x-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all border-2 ${isMenuOpen ? 'border-green-600 bg-green-50 text-green-600' : 'border-gray-200 bg-white text-gray-700 hover:border-green-200'}`}
+                className={`flex items-center space-x-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all border-2 ${isMenuOpen ? 'border-green-600 bg-green-50 text-green-600' : 'border-gray-100 bg-white text-gray-700 hover:border-green-200'}`}
                 aria-label="Toggle Menu"
               >
                 <span className="font-black text-[10px] hidden xs:block tracking-widest">{isMenuOpen ? 'CLOSE' : 'MENU'}</span>

@@ -43,7 +43,7 @@ const Footer: React.FC<FooterProps> = ({ config }) => {
   const visibleSocialLinks = config.socialLinks.filter(link => link.isVisible);
 
   return (
-    <footer className="bg-gray-950 text-gray-400 py-20 border-t border-gray-900">
+    <footer id="contact" className="bg-gray-950 text-gray-400 py-20 border-t border-gray-900 scroll-mt-20">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 lg:col-span-1">
