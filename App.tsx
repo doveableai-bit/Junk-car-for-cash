@@ -14,13 +14,26 @@ import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Footer from './components/Footer';
 
+/**
+ * Enhanced Utility to scale typography based on device width.
+ * Prevents "7xl" from breaking mobile screens.
+ */
 const getSizeClass = (size?: TextSize) => {
   if (!size) return 'text-base';
-  return {
-    xs: 'text-xs', sm: 'text-sm', base: 'text-base', lg: 'text-lg', xl: 'text-xl',
-    '2xl': 'text-2xl', '3xl': 'text-3xl', '4xl': 'text-4xl', '5xl': 'text-5xl',
-    '6xl': 'text-6xl', '7xl': 'text-7xl'
-  }[size] || 'text-base';
+  const sizeMap: Record<string, string> = {
+    'xs': 'text-[10px] md:text-xs',
+    'sm': 'text-xs md:text-sm',
+    'base': 'text-sm md:text-base',
+    'lg': 'text-base md:text-lg',
+    'xl': 'text-lg md:text-xl',
+    '2xl': 'text-xl md:text-2xl',
+    '3xl': 'text-2xl md:text-3xl',
+    '4xl': 'text-3xl md:text-4xl',
+    '5xl': 'text-3xl md:text-4xl lg:text-5xl',
+    '6xl': 'text-4xl md:text-5xl lg:text-6xl',
+    '7xl': 'text-5xl md:text-6xl lg:text-7xl'
+  };
+  return sizeMap[size] || 'text-base';
 };
 
 // --- Admin Editor Helper Components ---
@@ -31,9 +44,9 @@ const ContactFieldEditor = ({ title, valueField, colorField, sizeField, visibili
 }) => {
   const isVisible = !!config[visibilityField];
   return (
-    <div className={`bg-white p-6 rounded-[2rem] border transition-all ${isVisible ? 'border-gray-100 shadow-sm' : 'border-red-100 bg-red-50/5 opacity-80'}`}>
-      <div className="flex justify-between items-center mb-6">
-        <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">{title}</h4>
+    <div className={`bg-white p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border transition-all ${isVisible ? 'border-gray-100 shadow-sm' : 'border-red-100 bg-red-50/5 opacity-80'}`}>
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{title}</h4>
         <button 
           onClick={() => toggleVisibility(visibilityField, isVisible)}
           className={`w-12 h-6 rounded-full relative transition-all ${isVisible ? 'bg-green-600' : 'bg-gray-300'}`}
@@ -43,19 +56,19 @@ const ContactFieldEditor = ({ title, valueField, colorField, sizeField, visibili
       </div>
       <div className="space-y-4">
         <div>
-          <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Value</label>
-          <input name={valueField as string} value={(config[valueField] as string) || ''} onChange={handleFieldChange} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-green-500" />
+          <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-wider">Value</label>
+          <input name={valueField as string} value={(config[valueField] as string) || ''} onChange={handleFieldChange} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-base outline-none focus:ring-2 focus:ring-green-500" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Text Size</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-wider">Size</label>
             <select name={sizeField as string} value={(config[sizeField] as string) || 'base'} onChange={handleFieldChange} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-black uppercase">
               {['xs','sm','base','lg','xl'].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Text Color</label>
-            <input type="color" name={colorField as string} value={(config[colorField] as string) || '#000000'} onChange={handleFieldChange} className="w-full h-11 rounded-xl border border-gray-100 p-0 bg-white cursor-pointer" />
+            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-wider">Color</label>
+            <input type="color" name={colorField as string} value={(config[colorField] as string) || '#000000'} onChange={handleFieldChange} className="w-full h-11 rounded-xl border border-gray-100 p-0 bg-white cursor-pointer overflow-hidden" />
           </div>
         </div>
       </div>
@@ -67,21 +80,21 @@ const ContextEditorCard = ({ title, textField, sizeField, colorField, config, ha
   title: string; textField: keyof SiteConfig; sizeField: keyof SiteConfig; colorField: keyof SiteConfig; 
   config: SiteConfig; handleFieldChange: any; isTextArea?: boolean; 
 }) => (
-  <div className="bg-gray-50 p-6 rounded-3xl space-y-4 border border-gray-100 shadow-sm">
-    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">{title}</h4>
+  <div className="bg-gray-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-4 border border-gray-100 shadow-sm">
+    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</h4>
     {isTextArea ? (
-      <textarea name={textField as string} value={(config[textField] as string) || ''} onChange={handleFieldChange} rows={3} className="w-full p-4 bg-white border border-gray-200 rounded-xl font-bold outline-none focus:ring-2 focus:ring-green-500" />
+      <textarea name={textField as string} value={(config[textField] as string) || ''} onChange={handleFieldChange} rows={3} className="w-full p-4 bg-white border border-gray-200 rounded-xl font-bold text-base outline-none focus:ring-2 focus:ring-green-500" />
     ) : (
-      <input name={textField as string} value={(config[textField] as string) || ''} onChange={handleFieldChange} className="w-full p-4 bg-white border border-gray-200 rounded-xl font-bold outline-none focus:ring-2 focus:ring-green-500" />
+      <input name={textField as string} value={(config[textField] as string) || ''} onChange={handleFieldChange} className="w-full p-4 bg-white border border-gray-200 rounded-xl font-bold text-base outline-none focus:ring-2 focus:ring-green-500" />
     )}
     <div className="grid grid-cols-2 gap-4">
       <div>
-        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Size</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-wider">Size</label>
         <select name={sizeField as string} value={(config[sizeField] as string) || 'base'} onChange={handleFieldChange} className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-black uppercase">
           {['xs','sm','base','lg','xl','2xl','3xl','4xl','5xl','6xl','7xl'].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
         </select>
       </div>
-      <div><label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Color</label><input type="color" name={colorField as string} value={(config[colorField] as string) || '#000000'} onChange={handleFieldChange} className="w-full h-11 rounded-lg border border-gray-200 p-0 bg-white cursor-pointer" /></div>
+      <div><label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-wider">Color</label><input type="color" name={colorField as string} value={(config[colorField] as string) || '#000000'} onChange={handleFieldChange} className="w-full h-11 rounded-lg border border-gray-200 p-0 bg-white cursor-pointer overflow-hidden" /></div>
     </div>
   </div>
 );
@@ -92,14 +105,14 @@ const ButtonEditorCard = ({ title, textField, colorField, sizeField, shapeField,
 }) => {
   const isVisible = !!config[visibilityField];
   return (
-    <div className={`bg-white p-8 rounded-[2.5rem] shadow-lg border space-y-6 transition-all relative overflow-hidden ${isVisible ? 'border-gray-100 shadow-sm' : 'border-red-100 bg-red-50/10 grayscale-[0.5]'}`}>
+    <div className={`bg-white p-6 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-lg border space-y-6 transition-all relative overflow-hidden ${isVisible ? 'border-gray-100 shadow-sm' : 'border-red-100 bg-red-50/10 grayscale-[0.5]'}`}>
        {!isVisible && (
-         <div className="absolute top-4 right-8 bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
+         <div className="absolute top-2 right-2 sm:top-4 sm:right-8 bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
-           Currently Hidden
+           Hidden
          </div>
        )}
-       <div className="flex justify-between items-center">
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h4 className="text-sm font-black text-gray-900 uppercase tracking-tighter border-l-4 border-green-600 pl-4">{title}</h4>
           <div className="flex items-center gap-3">
             <span className={`text-[9px] font-black uppercase tracking-widest ${isVisible ? 'text-green-600' : 'text-gray-400'}`}>
@@ -114,34 +127,34 @@ const ButtonEditorCard = ({ title, textField, colorField, sizeField, shapeField,
           </div>
        </div>
        <div className={`space-y-4 transition-opacity ${isVisible ? 'opacity-100' : 'opacity-60'}`}>
-          <div className="bg-gray-50 p-4 rounded-2xl">
+          <div className="bg-gray-50 p-4 rounded-xl">
              <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Display Text</label>
-             <input name={textField as string} value={(config[textField] as string) || ''} onChange={handleFieldChange} disabled={!isVisible} className="w-full p-3 bg-white border border-gray-200 rounded-xl font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-50/50" />
+             <input name={textField as string} value={(config[textField] as string) || ''} onChange={handleFieldChange} disabled={!isVisible} className="w-full p-3 bg-white border border-gray-200 rounded-xl font-bold text-base outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-50/50" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div className="bg-gray-50 p-4 rounded-2xl">
+             <div className="bg-gray-50 p-4 rounded-xl">
                 <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Color Theme</label>
                 <div className="flex gap-2 items-center">
                   <input type="color" name={colorField as string} value={(config[colorField] as string) || '#16a34a'} onChange={handleFieldChange} disabled={!isVisible} className="w-10 h-10 rounded-lg cursor-pointer bg-white border border-gray-200 p-0.5 disabled:opacity-50" />
                   <span className="text-[10px] font-mono text-gray-500 uppercase">{(config[colorField] as string) || ''}</span>
                 </div>
              </div>
-             <div className="bg-gray-50 p-4 rounded-2xl">
-                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Button Shape</label>
+             <div className="bg-gray-50 p-4 rounded-xl">
+                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Shape</label>
                 <select name={shapeField as string} value={(config[shapeField] as string) || 'rounded'} onChange={handleFieldChange} disabled={!isVisible} className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase disabled:bg-gray-50/50">
-                  <option value="sharp">Sharp (Square)</option>
-                  <option value="rounded">Rounded (Soft)</option>
-                  <option value="pill">Pill (Circle)</option>
+                  <option value="sharp">Sharp</option>
+                  <option value="rounded">Rounded</option>
+                  <option value="pill">Pill</option>
                 </select>
              </div>
           </div>
-          <div className="bg-gray-50 p-4 rounded-2xl">
-             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Button Scaling (Size)</label>
+          <div className="bg-gray-50 p-4 rounded-xl">
+             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Scaling (Size)</label>
              <select name={sizeField as string} value={(config[sizeField] as string) || 'md'} onChange={handleFieldChange} disabled={!isVisible} className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-black uppercase disabled:bg-gray-50/50">
-                <option value="sm">Small (Compact)</option>
-                <option value="md">Medium (Standard)</option>
-                <option value="lg">Large (Emphasis)</option>
-                <option value="xl">X-Large (Hero Only)</option>
+                <option value="sm">Small</option>
+                <option value="md">Medium</option>
+                <option value="lg">Large</option>
+                <option value="xl">X-Large</option>
              </select>
           </div>
        </div>
@@ -157,17 +170,17 @@ const HomePage = ({ config, testimonials, faqs }: { config: SiteConfig; testimon
   return (
     <main id="home">
       <Hero config={config} />
-      <section className="py-24 bg-white border-b border-gray-100">
+      <section className="py-16 md:py-24 bg-white border-b border-gray-100">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12 md:mb-16">
             <h2 className={`font-black uppercase tracking-tight mb-4 ${getSizeClass(config.homeSection1TitleSize)}`} style={{ color: config.homeSection1TitleColor }}>{config.homeSection1Title}</h2>
             <p className={`font-bold uppercase tracking-[0.05em] max-w-4xl mx-auto leading-relaxed ${getSizeClass(config.homeSection1SubSize)}`} style={{ color: config.homeSection1SubColor }}>{config.homeSection1Sub}</p>
             
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <div className="mt-8 flex flex-wrap justify-center gap-2 sm:gap-3">
               {visibleKeywords.map((kw, i) => (
                 <span 
                   key={i} 
-                  className={`font-black uppercase tracking-widest border px-3 py-2 rounded-xl transition-all shadow-sm ${getSizeClass(config.keywordTextSize)}`}
+                  className={`font-black uppercase tracking-widest border px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all shadow-sm ${getSizeClass(config.keywordTextSize)}`}
                   style={{ color: config.keywordTextColor, borderColor: config.keywordBadgeColor, backgroundColor: config.keywordBgColor }}
                 >
                   {kw}
@@ -175,13 +188,13 @@ const HomePage = ({ config, testimonials, faqs }: { config: SiteConfig; testimon
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
             {(config.gallery || []).map((img) => (
-              <div key={img.id} className="group bg-white p-4 rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all">
-                <div className="aspect-square rounded-[2rem] overflow-hidden bg-gray-100"><img src={img.url} alt={img.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /></div>
-                <div className="p-6">
-                  <h3 className="text-xl font-black uppercase text-gray-900">{img.title}</h3>
-                  <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-2">{img.desc}</p>
+              <div key={img.id} className="group bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all">
+                <div className="aspect-square rounded-[1rem] sm:rounded-[2rem] overflow-hidden bg-gray-100"><img src={img.url} alt={img.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /></div>
+                <div className="p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-black uppercase text-gray-900 leading-tight">{img.title}</h3>
+                  <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-2">{img.desc}</p>
                 </div>
               </div>
             ))}
@@ -190,13 +203,13 @@ const HomePage = ({ config, testimonials, faqs }: { config: SiteConfig; testimon
       </section>
       <QuoteForm config={config} />
       <Testimonials testimonials={testimonials} config={config} />
-      <section id="map" className="py-24 bg-white scroll-mt-20">
+      <section id="map" className="py-16 md:py-24 bg-white scroll-mt-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-10 md:mb-12">
             <h2 className={`font-black uppercase tracking-tighter ${getSizeClass(config.mapSectionTitleSize)}`} style={{ color: config.mapSectionTitleColor }}>{config.mapSectionTitle}</h2>
             <p className={`font-bold uppercase tracking-[0.2em] mt-2 ${getSizeClass(config.mapSectionSubSize)}`} style={{ color: config.mapSectionSubColor }}>{config.mapSectionSub}</p>
           </div>
-          <div className="w-full h-[500px] rounded-[3rem] overflow-hidden shadow-2xl border-[12px] border-white ring-1 ring-gray-100 relative bg-gray-100">
+          <div className="w-full h-[350px] sm:h-[450px] md:h-[500px] rounded-[1.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl border-[6px] sm:border-[12px] border-white ring-1 ring-gray-100 relative bg-gray-100">
             <iframe src={config.mapEmbedUrl} width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" title="Business Location" className="absolute inset-0 w-full h-full"></iframe>
           </div>
         </div>
@@ -281,13 +294,6 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
     saveConfig(updated);
   };
 
-  const updateSocialLink = (id: string, field: keyof SocialLink, value: any) => {
-    const updatedLinks = config.socialLinks.map(l => l.id === id ? { ...l, [field]: value } : l);
-    const updated = { ...config, socialLinks: updatedLinks };
-    setConfig(updated);
-    saveConfig(updated);
-  };
-
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'logo' | 'hero' | 'gallery' | 'replace') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -315,52 +321,6 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
       }
     };
     reader.readAsDataURL(file);
-  };
-
-  const addKeyword = () => {
-    if (!newKeyword.trim()) return;
-    const current = (config.seoKeywords || '').split(',').map(k => k.trim()).filter(Boolean);
-    if (current.includes(newKeyword.trim())) return;
-    const updatedStr = [...current, newKeyword.trim()].join(', ');
-    const updated = { ...config, seoKeywords: updatedStr };
-    setConfig(updated);
-    saveConfig(updated);
-    setNewKeyword('');
-  };
-
-  const removeKeyword = (kw: string) => {
-    const current = (config.seoKeywords || '').split(',').map(k => k.trim()).filter(Boolean);
-    const updatedStr = current.filter(k => k !== kw).join(', ');
-    const updated = { ...config, seoKeywords: updatedStr };
-    setConfig(updated);
-    saveConfig(updated);
-  };
-
-  const toggleKeywordVisibility = (kw: string) => {
-    const hidden = (config.hiddenKeywords || '').split(',').map(k => k.trim()).filter(Boolean);
-    let newHidden;
-    if (hidden.includes(kw)) {
-      newHidden = hidden.filter(k => k !== kw).join(', ');
-    } else {
-      newHidden = [...hidden, kw].join(', ');
-    }
-    const updated = { ...config, hiddenKeywords: newHidden };
-    setConfig(updated);
-    saveConfig(updated);
-  };
-
-  const deletePhoto = async (id: string) => {
-    if (confirm('Delete photo permanently?')) {
-      await supabase.from('gallery').delete().eq('id', id);
-      setConfig({ ...config, gallery: (config.gallery || []).filter(g => g.id !== id) });
-    }
-  };
-
-  const updateGalleryText = async (id: string, field: 'title' | 'desc', value: string) => {
-    const updatedGallery = (config.gallery || []).map(img => img.id === id ? { ...img, [field]: value } : img);
-    setConfig({ ...config, gallery: updatedGallery });
-    const dbField = field === 'desc' ? 'description' : 'title';
-    await supabase.from('gallery').update({ [dbField]: value }).eq('id', id);
   };
 
   // --- REVIEWS LOGIC ---
@@ -449,9 +409,9 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
 
   if (!isAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 p-6">
-        <div className="max-w-md w-full bg-white p-12 rounded-[3rem] shadow-2xl text-center">
-          <h2 className="text-3xl font-black mb-8 uppercase tracking-tighter">Milwaukee HQ</h2>
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 p-4">
+        <div className="max-w-md w-full bg-white p-8 sm:p-12 rounded-[2rem] sm:rounded-[3rem] shadow-2xl text-center">
+          <h2 className="text-2xl sm:text-3xl font-black mb-8 uppercase tracking-tighter">Milwaukee <span className="text-green-600">HQ</span></h2>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-5 bg-gray-100 rounded-2xl text-center text-3xl font-black mb-6 border-none focus:ring-2 focus:ring-green-600 outline-none" placeholder="••••••" onKeyDown={e => e.key === 'Enter' && password === '4626716' && setIsAuth(true)} />
           <button onClick={() => password === '4626716' ? setIsAuth(true) : alert('Incorrect Code')} className="w-full bg-green-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-green-700 transition-all">Unlock Panel</button>
         </div>
@@ -472,44 +432,42 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
     { id: 'faq', label: 'FAQ' },
   ] as const;
 
-  const fullBusinessName = `${config.businessNamePart1 || ''} ${config.businessNamePart2 || ''} ${config.businessNamePart3 || ''} ${config.businessNamePart4 || ''}`.trim().toUpperCase();
-
   return (
-    <div className="min-h-screen pt-32 pb-20 bg-gray-50">
+    <div className="min-h-screen pt-24 sm:pt-32 pb-16 sm:pb-20 bg-gray-50">
       <div className="container mx-auto px-4 max-w-[1600px]">
-        {/* HEADER NAVIGATION */}
-        <div className="flex flex-col lg:flex-row justify-between items-center mb-12 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-4">
+        {/* HEADER NAVIGATION - STICKY-LIKE BEHAVIOR FOR MOBILE TABS */}
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-8 sm:mb-12 bg-white p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-gray-100">
+          <div className="flex items-center space-x-3 mb-4 lg:mb-0">
              <div className={`w-3 h-3 rounded-full ${isSaving ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
-             <h2 className="text-3xl font-black uppercase tracking-tighter">MILWAUKEE <span className="text-green-600">HQ</span></h2>
+             <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">ADMIN <span className="text-green-600">HQ</span></h2>
           </div>
-          <div className="flex bg-gray-100 p-1 rounded-2xl mt-6 lg:mt-0 overflow-x-auto gap-1 shadow-inner max-w-full">
+          <div className="flex bg-gray-100 p-1 rounded-xl sm:rounded-2xl overflow-x-auto gap-1 shadow-inner max-w-full no-scrollbar">
             {navTabs.map(t => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} className={`px-4 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-green-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-800'}`}>{t.label}</button>
+              <button key={t.id} onClick={() => setActiveTab(t.id)} className={`px-4 py-2.5 rounded-lg sm:rounded-xl font-black uppercase text-[9px] sm:text-[10px] tracking-widest transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-green-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-800'}`}>{t.label}</button>
             ))}
           </div>
         </div>
 
         {/* FAQ TAB */}
         {activeTab === 'faq' && (
-          <div className="animate-fade-in space-y-12">
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
-                <div className="flex justify-between items-center border-b pb-6">
+          <div className="animate-fade-in space-y-8 sm:space-y-12">
+             <div className="bg-white p-6 sm:p-10 rounded-[2rem] sm:rounded-[3rem] shadow-xl border border-gray-100 space-y-6 sm:space-y-8">
+                <div className="flex justify-between items-center border-b pb-4 sm:pb-6">
                   <div>
-                    <h3 className="text-xl font-black uppercase tracking-tight">Add New FAQ</h3>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Changes made here update the homepage instantly</p>
+                    <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight">Add New FAQ</h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Updates homepage instantly</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-gray-50 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100">
                    <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Question</label>
+                        <label className="text-[9px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Question</label>
                         <input placeholder="e.g. Do you provide cash today?" value={newFAQ.question} onChange={e => setNewFAQ({...newFAQ, question: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-black text-sm outline-none focus:ring-2 focus:ring-green-500 bg-white" />
                       </div>
                    </div>
                    <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Answer</label>
+                        <label className="text-[9px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Answer</label>
                         <textarea placeholder="Write the answer..." value={newFAQ.answer} onChange={e => setNewFAQ({...newFAQ, answer: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-medium text-sm outline-none focus:ring-2 focus:ring-green-500 bg-white" rows={2} />
                       </div>
                    </div>
@@ -519,16 +477,16 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
                 </div>
              </div>
 
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
-                <h3 className="text-xl font-black uppercase tracking-tight">Manage Current Site FAQ</h3>
-                <div className="grid grid-cols-1 gap-6">
+             <div className="bg-white p-6 sm:p-10 rounded-[2rem] sm:rounded-[3rem] shadow-xl border border-gray-100 space-y-6 sm:space-y-8">
+                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight">Manage Site FAQ</h3>
+                <div className="grid grid-cols-1 gap-4 sm:gap-6">
                    {faqs.map(f => {
                      const isEditing = editingFaqId === f.id;
                      return (
-                       <div key={f.id} className={`p-6 rounded-[2rem] border transition-all ${isEditing ? 'border-green-600 bg-green-50/10 ring-2 ring-green-100' : 'border-gray-100 bg-white shadow-sm'}`}>
+                       <div key={f.id} className={`p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border transition-all ${isEditing ? 'border-green-600 bg-green-50/10 ring-2 ring-green-100' : 'border-gray-100 bg-white shadow-sm'}`}>
                          {isEditing ? (
-                           <div className="space-y-6">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <div className="space-y-4 sm:space-y-6">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                <div>
                                   <label className="text-[9px] font-black text-green-600 uppercase mb-1 block tracking-widest">Question</label>
                                   <input id={`edit-q-${f.id}`} defaultValue={f.question} className="w-full p-4 bg-white border border-green-200 rounded-xl font-black text-sm outline-none" />
@@ -538,27 +496,29 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
                                   <textarea id={`edit-a-${f.id}`} defaultValue={f.answer} className="w-full p-4 bg-white border border-green-200 rounded-xl font-medium text-sm outline-none" rows={3} />
                                </div>
                              </div>
-                             <div className="flex gap-4">
+                             <div className="flex flex-col sm:flex-row gap-3">
                                <button onClick={() => {
                                    const qInput = document.getElementById(`edit-q-${f.id}`) as HTMLInputElement;
                                    const aInput = document.getElementById(`edit-a-${f.id}`) as HTMLTextAreaElement;
                                    updateFAQ(f.id!, qInput.value, aInput.value);
-                                 }} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow-lg tracking-widest">SAVE & SYNC TO HOME</button>
+                                 }} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow-lg tracking-widest">SAVE & SYNC</button>
                                <button onClick={() => setEditingFaqId(null)} className="px-8 bg-gray-200 text-gray-700 py-3 rounded-xl font-black uppercase text-xs">CANCEL</button>
                              </div>
                            </div>
                          ) : (
-                           <div className="flex justify-between items-center gap-6">
+                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                              <div className="flex-1">
                                <p className="font-black text-sm text-gray-900 uppercase tracking-tight mb-1">{f.question}</p>
-                               <p className="text-xs text-gray-500 font-medium line-clamp-1 italic">{f.answer}</p>
+                               <p className="text-xs text-gray-500 font-medium line-clamp-2 italic">{f.answer}</p>
                              </div>
-                             <div className="flex items-center gap-3">
-                               <button onClick={() => setEditingFaqId(f.id!)} className="p-3 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Edit Question">
-                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
+                               <button onClick={() => setEditingFaqId(f.id!)} className="flex-1 sm:flex-none flex items-center justify-center p-3 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Edit Question">
+                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                 <span className="sm:hidden ml-2 font-black text-[9px] uppercase">Edit</span>
                                </button>
-                               <button onClick={() => deleteFAQ(f.id!)} className="p-3 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Remove Question">
-                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                               <button onClick={() => deleteFAQ(f.id!)} className="flex-1 sm:flex-none flex items-center justify-center p-3 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Remove Question">
+                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                 <span className="sm:hidden ml-2 font-black text-[9px] uppercase">Delete</span>
                                </button>
                              </div>
                            </div>
@@ -573,70 +533,53 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
 
         {/* REVIEWS TAB */}
         {activeTab === 'reviews' && (
-          <div className="animate-fade-in space-y-12">
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
-                <div className="flex justify-between items-center border-b pb-6">
-                  <div>
-                    <h3 className="text-xl font-black uppercase tracking-tight">Post New Review</h3>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Add manual feedback with custom avatar branding</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
+          <div className="animate-fade-in space-y-8 sm:space-y-12">
+             <div className="bg-white p-6 sm:p-10 rounded-[2rem] sm:rounded-[3rem] shadow-xl border border-gray-100 space-y-6 sm:space-y-8">
+                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight">Post New Review</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-gray-50 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100">
                    <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Customer Name</label>
-                        <input placeholder="e.g. John D." value={newReview.name} onChange={e => setnewReview({...newReview, name: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-bold outline-none focus:ring-2 focus:ring-green-500 bg-white" />
+                        <label className="text-[9px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Customer Name</label>
+                        <input placeholder="e.g. John D." value={newReview.name} onChange={e => setnewReview({...newReview, name: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-bold outline-none focus:ring-2 focus:ring-green-500 bg-white text-base" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                          <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Avatar Color</label>
-                            <input type="color" value={newReview.logoColor} onChange={e => setnewReview({...newReview, logoColor: e.target.value})} className="w-full h-12 rounded-xl border border-gray-200 p-1 bg-white cursor-pointer" />
+                            <label className="text-[9px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Logo Color</label>
+                            <input type="color" value={newReview.logoColor} onChange={e => setnewReview({...newReview, logoColor: e.target.value})} className="w-full h-12 rounded-xl border border-gray-200 p-1 bg-white cursor-pointer overflow-hidden" />
                          </div>
                          <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Image URL (Optional)</label>
-                            <input placeholder="https://..." value={newReview.imageUrl} onChange={e => setnewReview({...newReview, imageUrl: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-bold outline-none focus:ring-2 focus:ring-green-500 bg-white text-xs" />
+                            <label className="text-[9px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Avatar URL</label>
+                            <input placeholder="https://..." value={newReview.imageUrl} onChange={e => setnewReview({...newReview, imageUrl: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-bold outline-none focus:ring-2 focus:ring-green-500 bg-white text-[10px]" />
                          </div>
                       </div>
                    </div>
                    <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Review Text</label>
-                        <textarea placeholder="Write review content..." value={newReview.text} onChange={e => setnewReview({...newReview, text: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-medium outline-none focus:ring-2 focus:ring-green-500 bg-white" rows={4} />
+                        <label className="text-[9px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Review Content</label>
+                        <textarea placeholder="Write review..." value={newReview.text} onChange={e => setnewReview({...newReview, text: e.target.value})} className="w-full p-4 rounded-xl border border-gray-200 font-medium outline-none focus:ring-2 focus:ring-green-500 bg-white text-base" rows={4} />
                       </div>
                    </div>
                    <div className="md:col-span-2">
-                     <button onClick={addReview} className="w-full bg-green-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg hover:bg-green-700 transition-all tracking-widest">Post Review to Live Site</button>
+                     <button onClick={addReview} className="w-full bg-green-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg hover:bg-green-700 transition-all tracking-widest">Publish Review</button>
                    </div>
                 </div>
              </div>
 
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 space-y-8">
-                <h3 className="text-xl font-black uppercase tracking-tight">Manage Existing Reviews</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+             <div className="bg-white p-6 sm:p-10 rounded-[2rem] sm:rounded-[3rem] shadow-xl border border-gray-100 space-y-6 sm:space-y-8">
+                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight">Manage Reviews</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                    {testimonials.map(t => {
                      const isEditing = editingReviewId === t.id;
                      return (
-                       <div key={t.id} className={`p-6 rounded-[2.5rem] border transition-all ${isEditing ? 'border-blue-500 ring-2 ring-blue-100 bg-blue-50/10' : 'border-gray-100 bg-white shadow-sm hover:shadow-md'}`}>
+                       <div key={t.id} className={`p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border transition-all ${isEditing ? 'border-blue-500 ring-2 ring-blue-100 bg-blue-50/10' : 'border-gray-100 bg-white shadow-sm hover:shadow-md'}`}>
                          {isEditing ? (
                            <div className="space-y-4">
-                             <div>
-                               <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block">Customer Name</label>
-                               <input id={`edit-name-${t.id}`} defaultValue={t.name} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-black uppercase text-xs outline-none" />
+                             <input id={`edit-name-${t.id}`} defaultValue={t.name} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-black uppercase text-xs outline-none" placeholder="Name" />
+                             <div className="grid grid-cols-2 gap-3">
+                                <input type="color" id={`edit-color-${t.id}`} defaultValue={t.logoColor || '#16a34a'} className="w-full h-10 rounded-xl border border-blue-200 p-1 bg-white cursor-pointer overflow-hidden" />
+                                <input id={`edit-url-${t.id}`} defaultValue={t.imageUrl || ''} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-bold text-[10px]" placeholder="Image URL" />
                              </div>
-                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                   <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block">Logo Color</label>
-                                   <input type="color" id={`edit-color-${t.id}`} defaultValue={t.logoColor || '#16a34a'} className="w-full h-10 rounded-xl border border-blue-200 p-1 bg-white" />
-                                </div>
-                                <div>
-                                   <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block">Image URL</label>
-                                   <input id={`edit-url-${t.id}`} defaultValue={t.imageUrl || ''} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-bold text-[10px]" />
-                                </div>
-                             </div>
-                             <div>
-                               <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block">Review Text</label>
-                               <textarea id={`edit-text-${t.id}`} defaultValue={t.text} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-medium text-xs outline-none" rows={4} />
-                             </div>
+                             <textarea id={`edit-text-${t.id}`} defaultValue={t.text} className="w-full p-3 bg-white border border-blue-200 rounded-xl font-medium text-xs outline-none" rows={4} placeholder="Content" />
                              <div className="grid grid-cols-2 gap-3 pt-2">
                                <button onClick={() => {
                                    const nameInput = document.getElementById(`edit-name-${t.id}`) as HTMLInputElement;
@@ -644,7 +587,7 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
                                    const urlInput = document.getElementById(`edit-url-${t.id}`) as HTMLInputElement;
                                    const colorInput = document.getElementById(`edit-color-${t.id}`) as HTMLInputElement;
                                    updateReview(t.id, nameInput.value, textInput.value, urlInput.value, colorInput.value);
-                                 }} className="bg-blue-600 text-white py-2 rounded-xl text-[10px] font-black uppercase shadow-lg">Save Changes</button>
+                                 }} className="bg-blue-600 text-white py-2 rounded-xl text-[10px] font-black uppercase shadow-lg">Save</button>
                                <button onClick={() => setEditingReviewId(null)} className="bg-gray-200 text-gray-700 py-2 rounded-xl text-[10px] font-black uppercase">Cancel</button>
                              </div>
                            </div>
@@ -666,12 +609,12 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
                                  </div>
                                </div>
                                <div className="flex gap-2">
-                                 <button onClick={() => setEditingReviewId(t.id)} className="p-2 bg-gray-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors" title="Edit Review"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                                 <button onClick={() => deleteReview(t.id)} className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors" title="Delete Review"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                 <button onClick={() => setEditingReviewId(t.id)} className="p-2 bg-gray-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                                 <button onClick={() => deleteReview(t.id)} className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                                </div>
                              </div>
-                             <p className="text-xs text-gray-500 font-medium italic mb-6 line-clamp-4 flex-grow">"{t.text}"</p>
-                             <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest pt-4 border-t border-gray-50">Posted {new Date(t.date).toLocaleDateString()}</div>
+                             <p className="text-xs text-gray-500 font-medium italic mb-4 line-clamp-4 flex-grow">"{t.text}"</p>
+                             <div className="text-[8px] font-black text-gray-300 uppercase tracking-widest pt-3 border-t border-gray-50">Posted {new Date(t.date).toLocaleDateString()}</div>
                            </div>
                          )}
                        </div>
@@ -684,27 +627,27 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
 
         {/* FORMS / LEADS TAB */}
         {activeTab === 'leads' && (
-          <div className="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden animate-fade-in border-gray-100">
-             <div className="p-8 border-b bg-gray-50 flex justify-between items-center">
-               <h3 className="text-xl font-black uppercase tracking-tight">Master Lead Database</h3>
-               <button onClick={fetchLeads} className="text-xs font-black bg-white px-4 py-2 border rounded-lg hover:bg-gray-100">Refresh</button>
+          <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-xl border overflow-hidden animate-fade-in border-gray-100">
+             <div className="p-4 sm:p-8 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+               <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight">Lead Database</h3>
+               <button onClick={fetchLeads} className="w-full sm:w-auto text-[10px] font-black bg-white px-6 py-2.5 border rounded-lg hover:bg-gray-100 uppercase tracking-widest shadow-sm">Refresh Leads</button>
              </div>
-             <div className="overflow-x-auto">
-               <table className="w-full text-left min-w-[1200px]">
+             <div className="overflow-x-auto no-scrollbar">
+               <table className="w-full text-left min-w-[1000px] md:min-w-[1200px]">
                  <thead className="bg-gray-100 text-[10px] font-black uppercase text-gray-400">
                    <tr>
-                     <th className="px-6 py-5">Date</th><th className="px-6 py-5">Form ID</th><th className="px-6 py-5">Customer</th><th className="px-6 py-5">Phone</th><th className="px-6 py-5">Vehicle</th><th className="px-6 py-5">Action</th>
+                     <th className="px-6 py-5">Date</th><th className="px-6 py-5">Form ID</th><th className="px-6 py-5">Customer</th><th className="px-6 py-5">Phone</th><th className="px-6 py-5">Vehicle</th><th className="px-6 py-5 text-right">Action</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-gray-100">
                    {leads.map((l) => (
-                     <tr key={l.id} className="hover:bg-gray-50">
+                     <tr key={l.id} className="hover:bg-gray-50 transition-colors">
                        <td className="px-6 py-5 text-[11px] font-bold">{new Date(l.created_at).toLocaleDateString()}</td>
                        <td className="px-6 py-5 text-[11px] font-black text-green-700">{l.form_number}</td>
                        <td className="px-6 py-5 font-black uppercase text-[11px]">{l.first_name} {l.last_name}</td>
                        <td className="px-6 py-5 text-green-600 font-black text-[11px]">{l.phone}</td>
                        <td className="px-6 py-5 font-black text-[11px] uppercase">{l.year} {l.make} {l.model}</td>
-                       <td className="px-6 py-5"><button onClick={() => setSelectedLead(l)} className="bg-green-600 text-white px-4 py-2 rounded-lg text-[10px] font-black">RECEIPT</button></td>
+                       <td className="px-6 py-5 text-right"><button onClick={() => setSelectedLead(l)} className="bg-green-600 text-white px-5 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-green-700 transition-all">Receipt</button></td>
                      </tr>
                    ))}
                  </tbody>
@@ -715,25 +658,31 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
         
         {/* Identity Tab */}
         {activeTab === 'branding' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-green-600 pl-4 mb-8">Business Identity</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 animate-fade-in">
+             <div className="bg-white p-6 sm:p-10 rounded-[2rem] sm:rounded-[3rem] shadow-xl border border-gray-100">
+                <h3 className="text-lg sm:text-xl font-black uppercase border-l-4 border-green-600 pl-4 mb-8 tracking-tighter">Business Identity</h3>
                 {[1, 2, 3, 4].map(n => (
-                  <div key={n} className="bg-gray-50 p-6 rounded-2xl mb-4">
-                    <label className="text-[10px] font-black text-gray-400 uppercase">Part {n}</label>
-                    <div className="flex gap-4">
-                      <input name={`businessNamePart${n}`} value={(config as any)[`businessNamePart${n}`] || ''} onChange={handleFieldChange} className="flex-1 p-4 bg-white border rounded-xl font-black uppercase text-sm" />
-                      <input type="color" name={`businessNameColor${n}`} value={(config as any)[`businessNameColor${n}`] || '#000000'} onChange={handleFieldChange} className="w-12 h-12 rounded-lg cursor-pointer" />
+                  <div key={n} className="bg-gray-50 p-4 sm:p-6 rounded-2xl mb-4">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Part {n}</label>
+                    <div className="flex gap-3 sm:gap-4">
+                      <input name={`businessNamePart${n}`} value={(config as any)[`businessNamePart${n}`] || ''} onChange={handleFieldChange} className="flex-1 p-3 sm:p-4 bg-white border border-gray-200 rounded-xl font-black uppercase text-sm sm:text-base outline-none focus:ring-2 focus:ring-green-500" />
+                      <input type="color" name={`businessNameColor${n}`} value={(config as any)[`businessNameColor${n}`] || '#000000'} onChange={handleFieldChange} className="w-12 h-12 rounded-lg cursor-pointer overflow-hidden bg-white border border-gray-200 p-1" />
                     </div>
                   </div>
                 ))}
              </div>
-             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100">
-                <h3 className="text-xl font-black uppercase border-l-4 border-green-600 pl-4 mb-8">Assets</h3>
-                <div className="p-8 bg-gray-50 rounded-2xl text-center">
-                    <button onClick={() => logoInput.current?.click()} className="bg-green-600 text-white px-8 py-3 rounded-xl text-xs font-black">Upload Logo</button>
+             <div className="bg-white p-6 sm:p-10 rounded-[2rem] sm:rounded-[3rem] shadow-xl border border-gray-100">
+                <h3 className="text-lg sm:text-xl font-black uppercase border-l-4 border-green-600 pl-4 mb-8 tracking-tighter">Brand Assets</h3>
+                <div className="p-8 sm:p-12 bg-gray-50 rounded-[2rem] text-center border-2 border-dashed border-gray-200">
+                    <button onClick={() => logoInput.current?.click()} className="bg-green-600 text-white px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-green-700 transition-all">Upload New Logo</button>
                     <input type="file" ref={logoInput} className="hidden" onChange={e => handleUpload(e, 'logo')} />
-                    {config.logo && <img src={config.logo} className="h-16 mx-auto mt-6" alt="Logo" />}
+                    {config.logo ? (
+                      <div className="mt-8 p-4 bg-white rounded-2xl shadow-sm inline-block max-w-full">
+                        <img src={config.logo} className="h-20 sm:h-24 mx-auto object-contain" alt="Current Logo" />
+                      </div>
+                    ) : (
+                      <p className="mt-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">No logo uploaded yet</p>
+                    )}
                 </div>
              </div>
           </div>
@@ -743,21 +692,44 @@ const AdminPanel = ({ config, setConfig, testimonials, setTestimonials, faqs, se
       {/* RECEIPT MODAL */}
       {selectedLead && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm overflow-y-auto animate-fade-in">
-           <div className="bg-white w-full max-w-2xl rounded-[1rem] shadow-2xl overflow-hidden border border-gray-100 my-auto">
+           <div className="bg-white w-full max-w-2xl rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 my-auto">
               <div className="p-4 border-b flex justify-end bg-gray-50 print:hidden">
-                 <button onClick={() => setSelectedLead(null)} className="text-2xl text-gray-400 px-4">×</button>
+                 <button onClick={() => setSelectedLead(null)} className="p-3 bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-xl transition-all"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
               </div>
-              <div className="p-12 bg-white" ref={receiptRef}>
-                 <h4 className="font-black uppercase text-base mb-8 tracking-tighter text-green-600">OFFICIAL QUOTE: {selectedLead.form_number}</h4>
-                 <div className="space-y-4 text-sm font-bold text-gray-900 uppercase">
-                    <p>CUSTOMER: {selectedLead.first_name} {selectedLead.last_name}</p>
-                    <p>PHONE: {selectedLead.phone}</p>
-                    <p>VEHICLE: {selectedLead.year} {selectedLead.make} {selectedLead.model}</p>
-                    <p>CONDITION: {selectedLead.condition}</p>
+              <div className="p-8 sm:p-12 bg-white" ref={receiptRef}>
+                 <div className="flex justify-between items-start mb-10">
+                   <h4 className="font-black uppercase text-lg sm:text-xl tracking-tighter text-green-600">OFFICIAL QUOTE: {selectedLead.form_number}</h4>
+                   <span className="text-[10px] font-black text-gray-400 uppercase border px-2 py-1 rounded">MKE BRANCH</span>
+                 </div>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 text-xs sm:text-sm font-bold text-gray-900 uppercase">
+                    <div className="space-y-4">
+                       <div className="border-l-4 border-green-500 pl-4 py-1">
+                          <label className="text-[9px] text-gray-400 block mb-0.5">CUSTOMER</label>
+                          {selectedLead.first_name} {selectedLead.last_name}
+                       </div>
+                       <div className="border-l-4 border-green-500 pl-4 py-1">
+                          <label className="text-[9px] text-gray-400 block mb-0.5">PHONE</label>
+                          {selectedLead.phone}
+                       </div>
+                    </div>
+                    <div className="space-y-4">
+                       <div className="border-l-4 border-blue-500 pl-4 py-1">
+                          <label className="text-[9px] text-gray-400 block mb-0.5">VEHICLE</label>
+                          {selectedLead.year} {selectedLead.make} {selectedLead.model}
+                       </div>
+                       <div className="border-l-4 border-blue-500 pl-4 py-1">
+                          <label className="text-[9px] text-gray-400 block mb-0.5">CONDITION</label>
+                          {selectedLead.condition}
+                       </div>
+                    </div>
+                 </div>
+                 <div className="mt-12 pt-8 border-t-2 border-dashed border-gray-100 text-center">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status: PENDING REVIEW BY APPRAISAL TEAM</p>
                  </div>
               </div>
-              <div className="p-8 bg-gray-50 border-t flex gap-4 print:hidden">
-                <button onClick={downloadReceipt} className="flex-1 bg-green-600 text-white py-4 rounded-xl font-black text-xs">DOWNLOAD IMAGE</button>
+              <div className="p-6 sm:p-8 bg-gray-50 border-t flex flex-col sm:flex-row gap-4 print:hidden">
+                <button onClick={downloadReceipt} className="flex-1 bg-green-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-green-700 transition-all">Download Receipt Image</button>
+                <button onClick={() => window.print()} className="flex-1 bg-gray-900 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-black transition-all">Print Record</button>
               </div>
            </div>
         </div>
@@ -804,9 +776,9 @@ const App: React.FC = () => {
   }, []);
 
   if (isLoading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-white font-black uppercase tracking-[0.4em]">
-      <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mb-8"></div>
-      <div>SYNCING DATA...</div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-white font-black uppercase tracking-[0.4em] p-6 text-center">
+      <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mb-8"></div>
+      <div className="text-sm sm:text-base">Syncing Milwaukee Cloud...</div>
     </div>
   );
 
