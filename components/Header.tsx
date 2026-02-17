@@ -66,7 +66,7 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
 
   const navItems = [
     { name: 'Home', path: '/', isHash: true, hash: 'home' },
-    { name: 'Quote Form', path: '/', isHash: true, hash: 'quote' },
+    { name: 'Quote Form', path: '/', isHash: true, hash: 'quote-form-actual' },
     { name: 'FAQ', path: '/', isHash: true, hash: 'faq' },
     { name: 'Contact Us', path: '/', isHash: true, hash: 'contact' },
   ];
@@ -82,6 +82,10 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
           const elementPosition = elementRect - bodyRect;
           const offsetPosition = elementPosition - offset;
           window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+          if (item.hash === 'quote-form-actual') {
+             const firstInput = element.querySelector('input');
+             if (firstInput) (firstInput as HTMLElement).focus();
+          }
         }
       } else {
         navigate(`/#${item.hash}`);
@@ -102,7 +106,7 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
 
   const handleFormIconClick = () => {
     if (location.pathname === '/') {
-      const element = document.getElementById('quote');
+      const element = document.getElementById('quote-form-actual');
       if (element) {
         const offset = 100; // Header height plus extra padding
         const bodyRect = document.body.getBoundingClientRect().top;
@@ -114,9 +118,13 @@ const Header: React.FC<HeaderProps> = ({ config }) => {
           top: offsetPosition,
           behavior: 'smooth'
         });
+
+        // Focus the first input field for better UX
+        const firstInput = element.querySelector('input');
+        if (firstInput) (firstInput as HTMLElement).focus();
       }
     } else {
-      navigate('/#quote');
+      navigate('/#quote-form-actual');
     }
   };
 

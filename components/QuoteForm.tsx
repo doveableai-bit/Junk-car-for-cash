@@ -177,7 +177,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ config }) => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-gray-100 relative overflow-hidden">
+          <form id="quote-form-actual" onSubmit={handleSubmit} className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-gray-100 relative overflow-hidden scroll-mt-24">
             <div className="absolute top-0 right-0 bg-green-600 text-[10px] font-black text-white px-4 py-1.5 rounded-bl-xl uppercase tracking-widest shadow-lg">No Hassle Junk Car Sales</div>
             <h3 className="text-xl font-black text-gray-900 mb-6 uppercase border-b pb-4">Contact Info</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
