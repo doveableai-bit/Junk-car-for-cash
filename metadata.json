@@ -1,0 +1,7 @@
+{
+  "name": "Kaul Auto Salvage - Milwaukee Junk Car Removal",
+  "description": "Premium SEO-optimized landing page and management system for a Milwaukee-based junk car removal service. Features instant quotes, dynamic testimonials, and local SEO optimization.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
